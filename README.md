@@ -23,6 +23,11 @@ set -a && . ./.env && set +a    # load into the shell
 once at creation and cannot be retrieved afterwards. Also check
 `SIGMA_API_BASE_URL` matches your Sigma cloud — the default is AWS US.
 
+To deploy from inside a Claude Code session instead of a laptop, the same
+variables are set on the environment rather than in a file, and the Sigma API
+host has to be allowlisted. See `docs/remote-session-setup.md` — the scripts
+read only from the environment, so nothing in the code changes either way.
+
 ## Deploying
 
 ```bash
