@@ -1,0 +1,13 @@
+# Credentials — never commit
+.env
+.env.*
+!.env.example
+
+# Spec pulled from a live workbook for schema comparison
+reference_spec.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
