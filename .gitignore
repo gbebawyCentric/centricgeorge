@@ -1,0 +1,8 @@
+# Generated on demand; the YAML form is the committed source of truth.
+sigma/workbook_spec.json
+
+# Pulled from a live org for schema comparison, org-specific.
+sigma/reference_spec.yaml
+
+__pycache__/
+*.pyc
