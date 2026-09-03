@@ -27,20 +27,28 @@ is what earlier drafts named, but it is not demonstrated against these tables.
 Each element reads its table directly; the SQL is the reference copy of the
 logic, ported to column formulas in `scripts/build_spec.py`.
 
-| Email block | Element | Ported from |
-|---|---|---|
-| Title + scope prose | `txt_title`, `txt_sub` | `sql/el_header.sql` (prose only — see below) |
-| "Ecom KPIs (plan-tracked)" | `tbl_glance` | `sql/el_header.sql`, `sql/el_kpi_tiles.sql` |
-| "Promo & email" | `tbl_promo` | `sql/el_promo.sql` (copy only) |
-| "Performance detail — ecom only" | `tbl_performance` | `sql/el_performance_grid.sql` |
-| "Retail + total DTC" | `tbl_channel_dtc` | `sql/el_channel_dtc.sql` |
-| "Top 10 sold" | `tbl_top_sold` | `sql/el_top_sold.sql` |
-| "Top 10 returned" | `tbl_top_returned` | `sql/el_top_returned.sql` |
+| Email block | Element | Source | Ported from |
+|---|---|---|---|
+| Banner + scope prose | `ctr_banner`, `txt_title`, `txt_scope` | static | `sql/el_header.sql` (prose only — see below) |
+| Four KPI cards | `kpi_yest_vs_plan`, `kpi_yest_vs_ly`, `kpi_mtd_vs_plan`, `kpi_mtd_vs_ly` | `TB_SIGMA_QA_GLANCE_BRAND` | `sql/el_kpi_tiles.sql` |
+| "Promo & email" copy | `tbl_promo` | `ECOM_DAILY_PROMO` | `sql/el_promo.sql` (copy half) |
+| Promo purchase figures | `kpi_promo_amt`, `kpi_promo_orders` | inline SQL | `sql/el_promo.sql` (totals half) |
+| "Performance detail — ecom only" | `tbl_performance` | inline SQL | `sql/el_performance_grid.sql` |
+| "Retail + total DTC" | `tbl_channel_dtc` | `TB_SIGMA_CHANNEL_FD` | `sql/el_channel_dtc.sql` |
+| "Top 10 sold" | `tbl_top_sold` | `TB_SIGMA_DAILY_TOP_STYLES` | `sql/el_top_sold.sql` |
+| "Top 10 returned" | `tbl_top_returned` | `TB_SIGMA_TOP_RETURNS` | `sql/el_top_returned.sql` |
+| — (hidden Data page) | `tbl_glance`, `tbl_promo_totals` | `TB_SIGMA_QA_GLANCE_BRAND`, inline SQL | `sql/el_header.sql` |
 
 The four KPI tiles were one row per tile, produced by a `UNION ALL` over a
 single glance row. A column formula cannot generate rows — but it does not need
-to here, because the four values are already four columns of that row. Each tile
-reads its own column plus its own ported `TREND_*` formula.
+to here, because the four values are already four columns of that row. Each card
+reads its own value/comparison pair and Sigma renders the change between them.
+The ported `TREND_*` formulas live on `tbl_glance` on the hidden Data page.
+
+Each card reads the warehouse table directly rather than sourcing from
+`tbl_glance`. A cross-element formula like `Sum([Yesterday demand])` does not
+resolve through the API — it comes back as `Unknown column` — whereas the
+`[TABLE/COLUMN]` form does.
 
 Brands are `Hudson`, `FD`, `Joe's` (brand ids `hudson-jeans`, `favorite-daughter`,
 `joes-jeans`).
@@ -51,11 +59,12 @@ Brands are `Hudson`, `FD`, `Joe's` (brand ids `hudson-jeans`, `favorite-daughter
 `TB_SIGMA_QA_KPI_LONG_BRAND` has no such metric — it carries Demand Sales,
 Orders, Units, UPT, AOV, AUR and a set of not-yet-populated ones.
 `sql/el_performance_grid.sql` assembles it from the glance table's plan columns
-and unions it in at sort position 2. **The workbook does not carry this row**: a
-column formula adds a column, never a row. Its figures are on `tbl_glance`
-instead (Yesterday plan $, Month plan $, To-go $, % plan achieved). Adding a
-`Demand Plan` row to `TB_SIGMA_QA_KPI_LONG_BRAND` upstream would make it an
-ordinary grid row.
+and unions it in. A column formula adds a column and never a row, so
+`tbl_performance` uses an inline `sql` source that carries the same `UNION`,
+placing the row at `METRIC_SORT` 1.5 — between Demand Sales (1) and Orders (2),
+which is where the email reads it. Adding a `Demand Plan` row to
+`TB_SIGMA_QA_KPI_LONG_BRAND` upstream would let the element go back to a plain
+`warehouse-table` source.
 
 **Metric ordering.** `TB_SIGMA_QA_KPI_LONG_BRAND` already carries `METRIC_SORT`
 (Demand Sales 1, Orders 2, Units 3, UPT 4, AOV 5, AUR 6), so the hand-rolled
@@ -81,13 +90,15 @@ matching on the numeric column returns zero rows. Shopify keeps one row per
 pipeline load, so it is de-duplicated to the latest row per order id first.
 Verified at 100% match for all three brands on 2026-08-27.
 
-**The workbook does not carry the promo purchase figures.** That de-duplication
-is a `ROW_NUMBER()` window over raw Shopify, followed by a cross-table join and
-an aggregation — none of which is a column formula, and `TB_SIGMA_ORDERS_QA`
-has no `TOTALDISCOUNT` to aggregate element-side. `tbl_promo` carries the
-scheduled promo/email copy only. A `TB_SIGMA_PROMO_DAILY` view materialising
-`PROMO_DISCOUNT_AMT` and `PROMO_ORDERS` per brand per day — which is exactly
-what `sql/el_promo.sql` computes — would make them ordinary columns.
+That de-duplication is a `ROW_NUMBER()` window over raw Shopify, followed by a
+cross-table join and an aggregation — none of which is a column formula, and
+`TB_SIGMA_ORDERS_QA` has no `TOTALDISCOUNT` to aggregate element-side. So the
+two figures come from an inline `sql` source instead, rendered as the
+`kpi_promo_amt` and `kpi_promo_orders` cards beside the promo copy.
+`tbl_promo` itself carries the scheduled promo/email copy only. A
+`TB_SIGMA_PROMO_DAILY` view materialising `PROMO_DISCOUNT_AMT` and
+`PROMO_ORDERS` per brand per day — exactly what `sql/el_promo.sql` computes —
+would turn the cards back into plain `warehouse-table` sources.
 
 **Date labels.** `TO_CHAR` has no format token for an unpadded month/day, and
 `'DAY'` yields a blank-padded uppercase name, so "Tuesday, 9/1/26" is built

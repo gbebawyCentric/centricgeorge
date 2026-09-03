@@ -58,58 +58,87 @@ python3 scripts/get_spec.py 6vUEJAG6qufed10qtaM140 -o reference_spec.json
 That is the existing **Centric West - Ecom KPI QA** workbook. Three things about
 the real schema are easy to get wrong:
 
-- `elements` is a **flat** list on `document`, not nested inside pages. A page is
-  only `{id, name, pageWidth}`.
-- `layout` is an **XML string** describing a 24-column grid, one `<Element>` per
-  element id. There is no per-element x/y/width/height.
-- A table's data comes from `source.kind = "warehouse-table"` naming a
-  `[database, schema, table]` path — **not** from inlined SQL. Each column
+- `elements` is a **flat** list on `document`, not nested inside pages. The page
+  an element belongs to is decided by `layout`.
+- `layout` is an **XML string** — one `<Page>` block per page, holding
+  `<Element>` and `<Container>` nodes on a 24-column grid. There is no
+  per-element x/y/width/height.
+- **Every element must appear in the layout.** To keep one off the report, put it
+  on a page marked `visibility: "hidden"`.
+- A table's `source` is one of `warehouse-table` (a `[database, schema, table]`
+  path), `sql` (an inline `statement`), or `table` (another element). Each column
   carries a Sigma `formula`.
 
-The POST body is the spec itself, not `{"spec": …}`. If a deploy is rejected,
-`deploy.py` prints the API's validation body verbatim; it dumps the full
+The POST body is the spec itself, not `{"spec": …}`, and an update is **PUT** —
+`PATCH` on that path 404s. If a deploy is rejected, `deploy.py` prints the API's
+validation body verbatim; it names the offending field and often dumps the full
 expected type, which is the fastest way to correct the builder.
 
-### Why the SQL is not inlined
+Constraints found by deploying, each of which rejected a build here:
 
-Sigma runs a workbook off warehouse tables plus column formulas, so the queries
-in `sql/` are ported into `build_spec.py` as formulas rather than shipped as
-SQL. Each ported formula carries a `PORTED FROM` comment naming its source file.
+| Rule | Detail |
+|---|---|
+| Text is `<p>` only | Inline set is `<u> <sub> <sup> <span> <a>`; no `<h1>`. A `<span style>` may carry only `color`, `background-color`, `font-size`, `font-family` — so a heading is a font-size, and letter-spacing is out. |
+| `display` is pivot-only | So `emptyCellDisplay` is unavailable on a normal table; blank cells render blank, not as the email's em dash. |
+| Conditional-format `value` is typed | It must match the column's type — a number against a numeric column. Against a column that fails to resolve, the validator asks for a string, which is a useful smell that the formula is broken. |
+| Inline SQL is `[Custom SQL/COLUMN]` | Always that literal qualifier, whatever the statement selects from. A bare `[COLUMN]` silently resolves to type `error`. |
+| Cross-element refs by name don't work | A `kpi-chart` sourced from another element with `Sum([Yesterday demand])` returns `Unknown column`. Every card here reads its warehouse table directly instead. |
 
-Four of the seven port cleanly — the `STYLE || ' — ' || COLOR` concatenations,
-the channel and brand-name `CASE`s, the KPI trend `CASE`, and the promo
-`NULLIF(TRIM(COALESCE(…)))` blank handling. Two things do not, because they are
-row-generating or cross-table work that a column formula cannot express:
+### How the SQL was ported
 
-- **The Demand Plan grid row.** `sql/el_performance_grid.sql` `UNION`s it in from
-  the glance table's plan columns; `TB_SIGMA_QA_KPI_LONG_BRAND` has no such
-  metric. A formula adds a column, never a row. The figures are on the KPI
-  element instead (Yesterday plan $, Month plan $, To-go $, % plan achieved).
-- **Promo purchase totals.** `sql/el_promo.sql` de-duplicates
-  `SHOPIFY_ORDERS_ADF` to the latest row per order id with `ROW_NUMBER()`, joins
-  it to the in-scope order list and aggregates. `TB_SIGMA_ORDERS_QA` carries no
-  `TOTALDISCOUNT`, so there is nothing to aggregate element-side. The scheduled
-  promo/email copy does port; only the redeemed-discount figures do not.
+The queries in `sql/` are ported into `build_spec.py` as Sigma column formulas.
+Each ported formula carries a `PORTED FROM` comment naming its source file.
 
-Both need a Snowflake view — the natural fix is to add a `Demand Plan` row to
-`TB_SIGMA_QA_KPI_LONG_BRAND` and a promo-totals column set to a new
-`TB_SIGMA_PROMO_DAILY` — after which each becomes an ordinary column reference
-here. The `sql/` queries stay the runnable definition of both in the meantime.
+Five of the seven port cleanly to column formulas over `warehouse-table`
+sources — the `STYLE || ' — ' || COLOR` concatenations, the channel and
+brand-name `CASE`s, the KPI trend `CASE`, and the promo
+`NULLIF(TRIM(COALESCE(…)))` blank handling. The KPI tiles' `UNION ALL` needed no
+port at all: it existed to turn one glance row into four, and the four values are
+already four columns of that row, so each card reads its own pair.
+
+Two are **not** column formulas, because they generate rows or span tables, and
+they use an inline `sql` source instead:
+
+- **The performance grid.** `TB_SIGMA_QA_KPI_LONG_BRAND` has no Demand Plan
+  metric; the email has that row. It is `UNION`ed in from the glance table's plan
+  columns at sort position 1.5, between Demand Sales and Orders. A column formula
+  adds a column, never a row.
+- **Promo purchase totals.** A `ROW_NUMBER()` de-duplication of raw Shopify,
+  joined to the in-scope order list and aggregated. `TB_SIGMA_ORDERS_QA` carries
+  no `TOTALDISCOUNT` to aggregate element-side.
+
+Both statements live in `build_spec.py` next to the element that uses them and
+are the same logic as the matching `sql/` file, minus its `:brand_label` /
+`:report_date` filter — the controls do that filtering now. Moving either into a
+Snowflake view would turn it back into an ordinary `warehouse-table` source.
 
 ## What the workbook contains
 
-One page, `Daily Ecom Mail`, with two controls — **Brand** (Hudson / FD / Joe's)
-and **Report date** — feeding every element. Top to bottom it mirrors the email:
+Two pages. **Daily Ecom Mail** is the report; **Data** is hidden and holds the
+two source tables that only exist to be queried. Two controls — **Brand**
+(Hudson / FD / Joe's) and **Report date** — filter every element on both.
 
-| Email block | Element | Source table |
+Top to bottom the report mirrors the email:
+
+| Email block | Element(s) | Source |
 |---|---|---|
-| Title + scope prose | `txt_title`, `txt_sub` | — (static) |
-| Plan-tracked KPIs, with a trend column per tile | `tbl_glance` | `TB_SIGMA_QA_GLANCE_BRAND` |
-| Promo & email copy | `tbl_promo` | `ECOM_DAILY_PROMO` |
-| Performance detail grid | `tbl_performance` | `TB_SIGMA_QA_KPI_LONG_BRAND` |
+| Dark banner + scope prose | `ctr_banner` → `txt_title`, `txt_scope` | static |
+| Four plan-tracked KPI cards | `kpi_yest_vs_plan`, `kpi_yest_vs_ly`, `kpi_mtd_vs_plan`, `kpi_mtd_vs_ly` | `TB_SIGMA_QA_GLANCE_BRAND` |
+| Promo & email copy, with the two purchase figures beside it | `tbl_promo` + `kpi_promo_amt`, `kpi_promo_orders` | `ECOM_DAILY_PROMO`, inline SQL |
+| Performance detail grid, incl. the Demand Plan row | `tbl_performance` | inline SQL |
 | Retail + total DTC (FD only; empty for the others) | `tbl_channel_dtc` | `TB_SIGMA_CHANNEL_FD` |
-| Top 10 sold | `tbl_top_sold` | `TB_SIGMA_DAILY_TOP_STYLES` |
-| Top 10 returned | `tbl_top_returned` | `TB_SIGMA_TOP_RETURNS` |
+| Top 10 sold / Top 10 returned, side by side | `tbl_top_sold`, `tbl_top_returned` | `TB_SIGMA_DAILY_TOP_STYLES`, `TB_SIGMA_TOP_RETURNS` |
+
+Presentation is carried on the elements: `kpi-chart` for the cards (value large,
+change against a comparison column under it), a `container` with the accent
+background behind the banner, per-column `format` (currency, percent, integer,
+date) and `hidden` on the key columns the controls filter by, and
+`conditionalFormats` turning `% Achieved` red under plan and green at or over it.
+
+On the hidden **Data** page: `tbl_glance`, which carries the ported
+`BRAND_DISPLAY_NAME`, `SAME_DAY_LY_DATE` and the four `TREND_*` columns and backs
+the Brand control's value list, and `tbl_promo_totals` for inspecting the promo
+figures directly.
 
 To send it, add a scheduled export in Sigma on the workbook, one schedule per
 brand with the Brand control pinned.
@@ -134,23 +163,24 @@ the known data gaps.
 
 ## What this does not reproduce
 
-- **The narrative banner paragraph.** In the real schema a text element is
-  static HTML with no data binding — the reference workbook's text elements are
-  all fixed prose. So the email's opening sentence ("Yesterday's ecom demand was
-  $X vs plan $Y…") cannot be assembled from columns the way an earlier draft of
-  `build_spec.py` assumed with `{{COLUMN}}` placeholders. The figures are all on
-  `tbl_glance`; the prose around them is static.
+- **The narrative banner paragraph.** A text element is static HTML with no data
+  binding, so the email's opening sentence ("Yesterday's ecom demand was $X vs
+  plan $Y…") cannot be assembled from columns — an earlier draft of
+  `build_spec.py` assumed a `{{COLUMN}}` placeholder syntax that does not exist.
+  The four KPI cards carry those same figures instead.
 - **Product thumbnails** next to the top-10 rows. The image URLs live in
   `SHOPIFY_PRODUCT_ADF.featuredImageUrl` and `TB_SIGMA_DAILY_TOP_STYLES` has no
-  product id to join on.
+  product id to join on. (Columns do take an `image` key, so the blocker is the
+  missing join, not the schema.)
 - **Per-brand theming.** One workbook renders one accent colour for all three
-  brands; the emails are themed per brand.
-- **A top-10 cut-off.** `WHERE RANK_IN_DAY <= 10` is a filter, not a column
-  formula, and this schema has no demonstrated per-element filter key.
-  `RANK_IN_DAY` is the leading column so the top 10 read off the top; add the
-  filter in the UI to drop the tail.
+  brands; the emails are themed per brand. `ACCENT` in `build_spec.py` sets it.
+- **A top-10 cut-off.** `WHERE RANK_IN_DAY <= 10` is a row filter, which this
+  builder does not set. Both tables are sorted by `RANK_IN_DAY`, so the top 10
+  read off the top; add the filter in the UI to drop the tail.
+- **The em-dash for blank cells**, because `display` is rejected on a normal
+  table (see the constraints table above).
 
-The last two are covered in `docs/data-mapping.md`.
+Product thumbnails and per-brand theming are covered in `docs/data-mapping.md`.
 
 ## Verified against the warehouse
 
