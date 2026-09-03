@@ -1,6 +1,6 @@
 {
-  "name": "Centric West — Daily Ecom Mail",
-  "description": "Daily ecom recap for Hudson, Favorite Daughter and Joe's. Mirrors the daily recap email: KPI cards, promo block, performance grid, FD retail/DTC split, and top 10 sold/returned. Pick a brand and report date, then schedule one send per brand.",
+  "name": "Daily Ecom Mail — Favorite Daughter",
+  "description": "Daily ecom recap for Favorite Daughter, mirroring the recap email: plan-tracked KPI cards, promo block, performance grid, retail + DTC and top 5 MTD retail styles by boutique, and top 10 sold/returned with product images.",
   "document": {
     "schemaVersion": 1,
     "kind": "workbook",
@@ -9,18 +9,23 @@
         "id": "ctr_banner",
         "kind": "container",
         "style": {
-          "backgroundColor": "#1B3A4B"
+          "backgroundColor": "#6B1D32"
         }
       },
       {
         "id": "txt_title",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #FFFFFF; font-size: 30px\">DAILY ECOM RECAP</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #FFFFFF; font-size: 28px\">Favorite Daughter</span></p>"
+      },
+      {
+        "id": "txt_kicker",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #FFFFFF; font-size: 11px\">DAILY ECOM RECAP</span></p>"
       },
       {
         "id": "txt_scope",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #C7D6DE\">Hudson · Favorite Daughter · Joe&#39;s — brand-owned website sales. Hudson excludes the Nordstrom marketplace; Favorite Daughter shows its retail boutiques separately below. LY = same weekday last year (&#8722;364).</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #FFFFFF; font-size: 13px\">Brand-owned website (ecom) — retail boutiques shown separately below.</span></p>"
       },
       {
         "kind": "control",
@@ -30,68 +35,12 @@
         "controlType": "list",
         "mode": "include",
         "selectionMode": "single",
-        "value": null,
+        "value": "FD",
         "filters": [
           {
             "source": {
               "kind": "table",
-              "elementId": "tbl_glance"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_promo_totals"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_performance"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_channel_dtc"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_top_sold"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_top_returned"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_promo"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "kpi_yest_vs_plan"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "kpi_yest_vs_ly"
+              "elementId": "kpi_mtd_vs_ly"
             },
             "columnId": "BRAND_LABEL"
           },
@@ -99,13 +48,6 @@
             "source": {
               "kind": "table",
               "elementId": "kpi_mtd_vs_plan"
-            },
-            "columnId": "BRAND_LABEL"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "kpi_mtd_vs_ly"
             },
             "columnId": "BRAND_LABEL"
           },
@@ -122,13 +64,76 @@
               "elementId": "kpi_promo_orders"
             },
             "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_retail_amt"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_retail_orders"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_yest_vs_ly"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_yest_vs_plan"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_channel_dtc"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_performance"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_promo"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_returned"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_sold"
+            },
+            "columnId": "BRAND_LABEL"
           }
         ],
         "source": {
           "kind": "source",
           "source": {
             "kind": "table",
-            "elementId": "tbl_glance"
+            "elementId": "tbl_performance"
           },
           "columnId": "BRAND_LABEL"
         }
@@ -145,63 +150,7 @@
           {
             "source": {
               "kind": "table",
-              "elementId": "tbl_glance"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_promo_totals"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_performance"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_channel_dtc"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_top_sold"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_top_returned"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "tbl_promo"
-            },
-            "columnId": "PROMO_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "kpi_yest_vs_plan"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "kpi_yest_vs_ly"
+              "elementId": "kpi_mtd_vs_ly"
             },
             "columnId": "REPORT_DATE"
           },
@@ -209,13 +158,6 @@
             "source": {
               "kind": "table",
               "elementId": "kpi_mtd_vs_plan"
-            },
-            "columnId": "REPORT_DATE"
-          },
-          {
-            "source": {
-              "kind": "table",
-              "elementId": "kpi_mtd_vs_ly"
             },
             "columnId": "REPORT_DATE"
           },
@@ -232,13 +174,181 @@
               "elementId": "kpi_promo_orders"
             },
             "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_retail_amt"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_retail_orders"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_yest_vs_ly"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "kpi_yest_vs_plan"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_channel_dtc"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_performance"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_promo"
+            },
+            "columnId": "PROMO_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_store_0"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_store_1"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_store_2"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_returned"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_sold"
+            },
+            "columnId": "REPORT_DATE"
           }
         ]
       },
       {
-        "id": "txt_kpi_heading",
+        "id": "txt_retail_added",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A\">ECOM KPIs (PLAN-TRACKED)</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #555555; font-size: 13px\">Retail boutiques are shown separately below and are NOT included in the ecom figures.</span></p>"
+      },
+      {
+        "id": "kpi_retail_amt",
+        "kind": "kpi-chart",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "sql",
+          "statement": "SELECT c.BRAND_LABEL,\n       p.DT_PT AS REPORT_DATE,\n       p.DEMAND_AMT,\n       p.ORDERS,\n       p.UNITS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_RETAIL_DAILY_PULSE p\nJOIN SANDBOX.SBX_RRAJASEKAR.ECOM_SIGMA_BRAND_CONFIG c\n  ON c.BRAND_ID = p.BRAND_ID\n"
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "[Custom SQL/BRAND_LABEL]",
+            "name": "Brand",
+            "hidden": true
+          },
+          {
+            "id": "REPORT_DATE",
+            "formula": "[Custom SQL/REPORT_DATE]",
+            "name": "Report date",
+            "format": {
+              "kind": "datetime",
+              "formatString": "%m/%d/%Y"
+            },
+            "hidden": true
+          },
+          {
+            "id": "kpi_value",
+            "formula": "Sum([Custom SQL/DEMAND_AMT])",
+            "name": "Retail boutiques added (yesterday)",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f",
+              "currencySymbol": "$"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi_value"
+        }
+      },
+      {
+        "id": "kpi_retail_orders",
+        "kind": "kpi-chart",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "sql",
+          "statement": "SELECT c.BRAND_LABEL,\n       p.DT_PT AS REPORT_DATE,\n       p.DEMAND_AMT,\n       p.ORDERS,\n       p.UNITS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_RETAIL_DAILY_PULSE p\nJOIN SANDBOX.SBX_RRAJASEKAR.ECOM_SIGMA_BRAND_CONFIG c\n  ON c.BRAND_ID = p.BRAND_ID\n"
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "[Custom SQL/BRAND_LABEL]",
+            "name": "Brand",
+            "hidden": true
+          },
+          {
+            "id": "REPORT_DATE",
+            "formula": "[Custom SQL/REPORT_DATE]",
+            "name": "Report date",
+            "format": {
+              "kind": "datetime",
+              "formatString": "%m/%d/%Y"
+            },
+            "hidden": true
+          },
+          {
+            "id": "kpi_value",
+            "formula": "Sum([Custom SQL/ORDERS])",
+            "name": "Retail orders (yesterday)",
+            "format": {
+              "kind": "number",
+              "formatString": ",d"
+            }
+          }
+        ],
+        "value": {
+          "columnId": "kpi_value"
+        }
+      },
+      {
+        "id": "txt_glance_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A; font-size: 12px\">AT A GLANCE — ECOM (PLAN-TRACKED)</span></p>"
       },
       {
         "id": "kpi_yest_vs_plan",
@@ -471,7 +581,7 @@
       {
         "id": "txt_promo_heading",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A\">PROMO &amp; EMAIL</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A; font-size: 12px\">PROMO &AMP; EMAIL</span></p>"
       },
       {
         "id": "tbl_promo",
@@ -513,14 +623,14 @@
             "name": "Email"
           }
         ],
+        "name": "Scheduled promo copy",
         "order": [
           "BRAND_LABEL",
           "PROMO_DATE",
           "PROMO_TEXT",
           "EMAIL_TEXT"
         ],
-        "visibleAsSource": true,
-        "name": "Scheduled promo copy"
+        "visibleAsSource": true
       },
       {
         "id": "kpi_promo_amt",
@@ -528,7 +638,7 @@
         "source": {
           "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
           "kind": "sql",
-          "statement": "-- Promo purchase $ — see sql/el_promo.sql for the annotated original.\n-- Shopify keeps one row per pipeline load, so de-duplicate to the latest row\n-- per order id, then join the in-scope order list to it so the promo figure\n-- inherits exactly the same scope filter as the demand numbers.\nWITH shopify_latest AS (\n    SELECT s.ID,\n           s.TOTALDISCOUNT,\n           ROW_NUMBER() OVER (PARTITION BY s.ID ORDER BY s.CREATEDAT DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF s\n)\nSELECT o.BRAND_LABEL,\n       o.REPORT_DATE,\n       SUM(COALESCE(sl.TOTALDISCOUNT, 0))          AS PROMO_DISCOUNT_AMT,\n       COUNT_IF(COALESCE(sl.TOTALDISCOUNT, 0) > 0) AS PROMO_ORDERS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_ORDERS_QA o\nLEFT JOIN shopify_latest sl\n       ON sl.ID = o.ORDER_ID\n      AND sl.rn = 1\nGROUP BY o.BRAND_LABEL, o.REPORT_DATE\n"
+          "statement": "WITH shopify_latest AS (\n    SELECT s.ID,\n           s.TOTALDISCOUNT,\n           ROW_NUMBER() OVER (PARTITION BY s.ID ORDER BY s.CREATEDAT DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF s\n)\nSELECT o.BRAND_LABEL,\n       o.REPORT_DATE,\n       SUM(COALESCE(sl.TOTALDISCOUNT, 0))          AS PROMO_DISCOUNT_AMT,\n       COUNT_IF(COALESCE(sl.TOTALDISCOUNT, 0) > 0) AS PROMO_ORDERS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_ORDERS_QA o\nLEFT JOIN shopify_latest sl\n       ON sl.ID = o.ORDER_ID\n      AND sl.rn = 1\nGROUP BY o.BRAND_LABEL, o.REPORT_DATE\n"
         },
         "columns": [
           {
@@ -568,7 +678,7 @@
         "source": {
           "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
           "kind": "sql",
-          "statement": "-- Promo purchase $ — see sql/el_promo.sql for the annotated original.\n-- Shopify keeps one row per pipeline load, so de-duplicate to the latest row\n-- per order id, then join the in-scope order list to it so the promo figure\n-- inherits exactly the same scope filter as the demand numbers.\nWITH shopify_latest AS (\n    SELECT s.ID,\n           s.TOTALDISCOUNT,\n           ROW_NUMBER() OVER (PARTITION BY s.ID ORDER BY s.CREATEDAT DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF s\n)\nSELECT o.BRAND_LABEL,\n       o.REPORT_DATE,\n       SUM(COALESCE(sl.TOTALDISCOUNT, 0))          AS PROMO_DISCOUNT_AMT,\n       COUNT_IF(COALESCE(sl.TOTALDISCOUNT, 0) > 0) AS PROMO_ORDERS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_ORDERS_QA o\nLEFT JOIN shopify_latest sl\n       ON sl.ID = o.ORDER_ID\n      AND sl.rn = 1\nGROUP BY o.BRAND_LABEL, o.REPORT_DATE\n"
+          "statement": "WITH shopify_latest AS (\n    SELECT s.ID,\n           s.TOTALDISCOUNT,\n           ROW_NUMBER() OVER (PARTITION BY s.ID ORDER BY s.CREATEDAT DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF s\n)\nSELECT o.BRAND_LABEL,\n       o.REPORT_DATE,\n       SUM(COALESCE(sl.TOTALDISCOUNT, 0))          AS PROMO_DISCOUNT_AMT,\n       COUNT_IF(COALESCE(sl.TOTALDISCOUNT, 0) > 0) AS PROMO_ORDERS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_ORDERS_QA o\nLEFT JOIN shopify_latest sl\n       ON sl.ID = o.ORDER_ID\n      AND sl.rn = 1\nGROUP BY o.BRAND_LABEL, o.REPORT_DATE\n"
         },
         "columns": [
           {
@@ -604,7 +714,7 @@
       {
         "id": "txt_perf_heading",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A\">PERFORMANCE DETAIL — ECOM ONLY</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A; font-size: 12px\">PERFORMANCE DETAIL — ECOM ONLY</span></p>"
       },
       {
         "id": "tbl_performance",
@@ -612,7 +722,7 @@
         "source": {
           "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
           "kind": "sql",
-          "statement": "-- Performance grid — see sql/el_performance_grid.sql for the annotated\n-- original. The long KPI table carries no Demand Plan metric; the email has\n-- one, assembled from the glance table's plan columns and unioned in.\nSELECT BRAND_LABEL, REPORT_DATE, METRIC_SORT, METRIC,\n       YESTERDAY, SAME_DAY_LY, MTD, LY_MTD,\n       TOTAL_MONTH_PLAN, TO_GO_VS_PLAN, PCT_PLAN_ACHIEVED\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_KPI_LONG_BRAND\nUNION ALL\nSELECT BRAND_LABEL, REPORT_DATE, 1.5 AS METRIC_SORT, 'Demand Plan' AS METRIC,\n       Y_DEMAND_PLAN AS YESTERDAY, NULL AS SAME_DAY_LY, NULL AS MTD,\n       NULL AS LY_MTD, TOTAL_MONTH_PLAN, TO_GO_VS_PLAN, PCT_PLAN_ACHIEVED\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_GLANCE_BRAND\n"
+          "statement": "SELECT BRAND_LABEL, REPORT_DATE, METRIC_SORT, METRIC,\n       YESTERDAY, SAME_DAY_LY, MTD, LY_MTD,\n       TOTAL_MONTH_PLAN, TO_GO_VS_PLAN, PCT_PLAN_ACHIEVED\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_KPI_LONG_BRAND\nUNION ALL\nSELECT BRAND_LABEL, REPORT_DATE, 1.5 AS METRIC_SORT, 'Demand Plan' AS METRIC,\n       Y_DEMAND_PLAN AS YESTERDAY, NULL AS SAME_DAY_LY, NULL AS MTD,\n       NULL AS LY_MTD, TOTAL_MONTH_PLAN, TO_GO_VS_PLAN, PCT_PLAN_ACHIEVED\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_GLANCE_BRAND\n"
         },
         "columns": [
           {
@@ -708,6 +818,7 @@
             }
           }
         ],
+        "name": "Performance detail — ecom only",
         "order": [
           "BRAND_LABEL",
           "REPORT_DATE",
@@ -722,7 +833,6 @@
           "PCT_PLAN_ACHIEVED"
         ],
         "visibleAsSource": true,
-        "name": "Performance detail — ecom only",
         "sort": [
           {
             "columnId": "METRIC_SORT",
@@ -763,12 +873,12 @@
       {
         "id": "txt_kpi_note",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #8A8A8A\">KPI additions in progress: Margin $/%, Media Spend, CAC/CPO, Traffic, CVR, Net $ — those rows are present but blank on purpose.</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #888888; font-size: 12px\">KPI additions in progress: Margin $/%, Media Spend, CAC/CPO, Traffic, CVR, Net $ — those rows are present but blank on purpose.</span></p>"
       },
       {
         "id": "txt_channel_heading",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A\">RETAIL + TOTAL DTC — FAVORITE DAUGHTER ONLY</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A; font-size: 12px\">RETAIL + TOTAL DTC</span></p>"
       },
       {
         "id": "tbl_channel_dtc",
@@ -840,6 +950,7 @@
             }
           }
         ],
+        "name": "Retail + total DTC",
         "order": [
           "BRAND_LABEL",
           "REPORT_DATE",
@@ -850,7 +961,6 @@
           "MTD_DEMAND"
         ],
         "visibleAsSource": true,
-        "name": "Retail + total DTC",
         "sort": [
           {
             "columnId": "CHANNEL_ORDER",
@@ -863,32 +973,287 @@
         }
       },
       {
+        "id": "txt_channel_note",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #888888; font-size: 12px\">Retail = Shopify orders tied to a physical location (Madison Ave / Nashville / Beverly Hills).</span></p>"
+      },
+      {
+        "id": "txt_stores_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A; font-size: 12px\">TOP 5 MTD RETAIL STYLES</span></p>"
+      },
+      {
+        "id": "tbl_store_0",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "sql",
+          "statement": "WITH ord AS (\n    SELECT r.ORDER_ID, r.DT_PT, l.RETAILLOCATIONNAME AS STORE\n    FROM SANDBOX.SBX_RRAJASEKAR.VW_SIGMA_ORDERS_RETAIL r\n    JOIN (\n        SELECT ID, RETAILLOCATIONNAME,\n               ROW_NUMBER() OVER (PARTITION BY ID ORDER BY CREATEDAT DESC) AS rn\n        FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF\n        WHERE RETAILLOCATIONNAME IS NOT NULL\n    ) l ON l.ID = r.ORDER_ID AND l.rn = 1\n    WHERE l.RETAILLOCATIONNAME = 'Madison Avenue Boutique'\n),\nitems AS (\n    SELECT ORDERID, PRODUCTID, PRODUCTTITLE, VARIANTTITLE, QUANTITY,\n           COALESCE(DISCOUNTEDUNITPRICE, VARIANTPRICE, 0) * QUANTITY AS AMT,\n           ROW_NUMBER() OVER (PARTITION BY LINEITEMID\n                              ORDER BY LOADTIMESTAMP DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDER_ITEMS_ADF\n),\nimg AS (\n    SELECT \"productId\" AS PRODUCT_ID,\n           MAX_BY(\"featuredImageUrl\", \"loadTimestamp\") AS IMAGE_URL\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_PRODUCT_ADF\n    WHERE \"featuredImageUrl\" IS NOT NULL\n    GROUP BY 1\n),\ndates AS (\n    SELECT DISTINCT DT_PT AS REPORT_DATE FROM ord\n),\nagg AS (\n    SELECT d.REPORT_DATE,\n           i.PRODUCTTITLE,\n           SPLIT_PART(i.VARIANTTITLE, ' / ', 1) AS COLOR,\n           MAX(g.IMAGE_URL)                     AS IMAGE_URL,\n           SUM(i.QUANTITY)                      AS UNITS,\n           SUM(i.AMT)                           AS AMT\n    FROM dates d\n    JOIN ord o\n      ON DATE_TRUNC('month', o.DT_PT) = DATE_TRUNC('month', d.REPORT_DATE)\n     AND o.DT_PT <= d.REPORT_DATE\n    JOIN items i ON i.ORDERID = o.ORDER_ID AND i.rn = 1\n    LEFT JOIN img g ON g.PRODUCT_ID = i.PRODUCTID\n    GROUP BY 1, 2, 3\n)\nSELECT REPORT_DATE,\n       PRODUCTTITLE || ' — ' || COLOR AS STYLE_COLOR,\n       IMAGE_URL,\n       UNITS,\n       AMT,\n       ROW_NUMBER() OVER (PARTITION BY REPORT_DATE\n                          ORDER BY UNITS DESC, AMT DESC) AS RANK_IN_MONTH\nFROM agg\nQUALIFY RANK_IN_MONTH <= 5\n"
+        },
+        "columns": [
+          {
+            "id": "REPORT_DATE",
+            "formula": "[Custom SQL/REPORT_DATE]",
+            "name": "Report date",
+            "format": {
+              "kind": "datetime",
+              "formatString": "%m/%d/%Y"
+            },
+            "hidden": true
+          },
+          {
+            "id": "RANK_IN_MONTH",
+            "formula": "[Custom SQL/RANK_IN_MONTH]",
+            "name": "#",
+            "format": {
+              "kind": "number",
+              "formatString": ",d"
+            },
+            "hidden": true
+          },
+          {
+            "id": "IMAGE_URL",
+            "formula": "[Custom SQL/IMAGE_URL]",
+            "name": " ",
+            "image": {
+              "type": "fixed",
+              "height": 44,
+              "width": 44,
+              "preserveAspectRatio": "preserve"
+            }
+          },
+          {
+            "id": "STYLE_COLOR",
+            "formula": "[Custom SQL/STYLE_COLOR]",
+            "name": "Style / colour"
+          },
+          {
+            "id": "UNITS",
+            "formula": "[Custom SQL/UNITS]",
+            "name": "Units",
+            "format": {
+              "kind": "number",
+              "formatString": ",d"
+            }
+          },
+          {
+            "id": "AMT",
+            "formula": "[Custom SQL/AMT]",
+            "name": "$",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f",
+              "currencySymbol": "$"
+            }
+          }
+        ],
+        "name": "MADISON AVENUE",
+        "order": [
+          "REPORT_DATE",
+          "RANK_IN_MONTH",
+          "IMAGE_URL",
+          "STYLE_COLOR",
+          "UNITS",
+          "AMT"
+        ],
+        "visibleAsSource": true,
+        "sort": [
+          {
+            "columnId": "RANK_IN_MONTH",
+            "direction": "ascending",
+            "nulls": "last"
+          }
+        ]
+      },
+      {
+        "id": "tbl_store_1",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "sql",
+          "statement": "WITH ord AS (\n    SELECT r.ORDER_ID, r.DT_PT, l.RETAILLOCATIONNAME AS STORE\n    FROM SANDBOX.SBX_RRAJASEKAR.VW_SIGMA_ORDERS_RETAIL r\n    JOIN (\n        SELECT ID, RETAILLOCATIONNAME,\n               ROW_NUMBER() OVER (PARTITION BY ID ORDER BY CREATEDAT DESC) AS rn\n        FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF\n        WHERE RETAILLOCATIONNAME IS NOT NULL\n    ) l ON l.ID = r.ORDER_ID AND l.rn = 1\n    WHERE l.RETAILLOCATIONNAME = 'Beverly Hills Boutique'\n),\nitems AS (\n    SELECT ORDERID, PRODUCTID, PRODUCTTITLE, VARIANTTITLE, QUANTITY,\n           COALESCE(DISCOUNTEDUNITPRICE, VARIANTPRICE, 0) * QUANTITY AS AMT,\n           ROW_NUMBER() OVER (PARTITION BY LINEITEMID\n                              ORDER BY LOADTIMESTAMP DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDER_ITEMS_ADF\n),\nimg AS (\n    SELECT \"productId\" AS PRODUCT_ID,\n           MAX_BY(\"featuredImageUrl\", \"loadTimestamp\") AS IMAGE_URL\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_PRODUCT_ADF\n    WHERE \"featuredImageUrl\" IS NOT NULL\n    GROUP BY 1\n),\ndates AS (\n    SELECT DISTINCT DT_PT AS REPORT_DATE FROM ord\n),\nagg AS (\n    SELECT d.REPORT_DATE,\n           i.PRODUCTTITLE,\n           SPLIT_PART(i.VARIANTTITLE, ' / ', 1) AS COLOR,\n           MAX(g.IMAGE_URL)                     AS IMAGE_URL,\n           SUM(i.QUANTITY)                      AS UNITS,\n           SUM(i.AMT)                           AS AMT\n    FROM dates d\n    JOIN ord o\n      ON DATE_TRUNC('month', o.DT_PT) = DATE_TRUNC('month', d.REPORT_DATE)\n     AND o.DT_PT <= d.REPORT_DATE\n    JOIN items i ON i.ORDERID = o.ORDER_ID AND i.rn = 1\n    LEFT JOIN img g ON g.PRODUCT_ID = i.PRODUCTID\n    GROUP BY 1, 2, 3\n)\nSELECT REPORT_DATE,\n       PRODUCTTITLE || ' — ' || COLOR AS STYLE_COLOR,\n       IMAGE_URL,\n       UNITS,\n       AMT,\n       ROW_NUMBER() OVER (PARTITION BY REPORT_DATE\n                          ORDER BY UNITS DESC, AMT DESC) AS RANK_IN_MONTH\nFROM agg\nQUALIFY RANK_IN_MONTH <= 5\n"
+        },
+        "columns": [
+          {
+            "id": "REPORT_DATE",
+            "formula": "[Custom SQL/REPORT_DATE]",
+            "name": "Report date",
+            "format": {
+              "kind": "datetime",
+              "formatString": "%m/%d/%Y"
+            },
+            "hidden": true
+          },
+          {
+            "id": "RANK_IN_MONTH",
+            "formula": "[Custom SQL/RANK_IN_MONTH]",
+            "name": "#",
+            "format": {
+              "kind": "number",
+              "formatString": ",d"
+            },
+            "hidden": true
+          },
+          {
+            "id": "IMAGE_URL",
+            "formula": "[Custom SQL/IMAGE_URL]",
+            "name": " ",
+            "image": {
+              "type": "fixed",
+              "height": 44,
+              "width": 44,
+              "preserveAspectRatio": "preserve"
+            }
+          },
+          {
+            "id": "STYLE_COLOR",
+            "formula": "[Custom SQL/STYLE_COLOR]",
+            "name": "Style / colour"
+          },
+          {
+            "id": "UNITS",
+            "formula": "[Custom SQL/UNITS]",
+            "name": "Units",
+            "format": {
+              "kind": "number",
+              "formatString": ",d"
+            }
+          },
+          {
+            "id": "AMT",
+            "formula": "[Custom SQL/AMT]",
+            "name": "$",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f",
+              "currencySymbol": "$"
+            }
+          }
+        ],
+        "name": "BEVERLY HILLS",
+        "order": [
+          "REPORT_DATE",
+          "RANK_IN_MONTH",
+          "IMAGE_URL",
+          "STYLE_COLOR",
+          "UNITS",
+          "AMT"
+        ],
+        "visibleAsSource": true,
+        "sort": [
+          {
+            "columnId": "RANK_IN_MONTH",
+            "direction": "ascending",
+            "nulls": "last"
+          }
+        ]
+      },
+      {
+        "id": "tbl_store_2",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "sql",
+          "statement": "WITH ord AS (\n    SELECT r.ORDER_ID, r.DT_PT, l.RETAILLOCATIONNAME AS STORE\n    FROM SANDBOX.SBX_RRAJASEKAR.VW_SIGMA_ORDERS_RETAIL r\n    JOIN (\n        SELECT ID, RETAILLOCATIONNAME,\n               ROW_NUMBER() OVER (PARTITION BY ID ORDER BY CREATEDAT DESC) AS rn\n        FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF\n        WHERE RETAILLOCATIONNAME IS NOT NULL\n    ) l ON l.ID = r.ORDER_ID AND l.rn = 1\n    WHERE l.RETAILLOCATIONNAME = 'Nashville Boutique'\n),\nitems AS (\n    SELECT ORDERID, PRODUCTID, PRODUCTTITLE, VARIANTTITLE, QUANTITY,\n           COALESCE(DISCOUNTEDUNITPRICE, VARIANTPRICE, 0) * QUANTITY AS AMT,\n           ROW_NUMBER() OVER (PARTITION BY LINEITEMID\n                              ORDER BY LOADTIMESTAMP DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDER_ITEMS_ADF\n),\nimg AS (\n    SELECT \"productId\" AS PRODUCT_ID,\n           MAX_BY(\"featuredImageUrl\", \"loadTimestamp\") AS IMAGE_URL\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_PRODUCT_ADF\n    WHERE \"featuredImageUrl\" IS NOT NULL\n    GROUP BY 1\n),\ndates AS (\n    SELECT DISTINCT DT_PT AS REPORT_DATE FROM ord\n),\nagg AS (\n    SELECT d.REPORT_DATE,\n           i.PRODUCTTITLE,\n           SPLIT_PART(i.VARIANTTITLE, ' / ', 1) AS COLOR,\n           MAX(g.IMAGE_URL)                     AS IMAGE_URL,\n           SUM(i.QUANTITY)                      AS UNITS,\n           SUM(i.AMT)                           AS AMT\n    FROM dates d\n    JOIN ord o\n      ON DATE_TRUNC('month', o.DT_PT) = DATE_TRUNC('month', d.REPORT_DATE)\n     AND o.DT_PT <= d.REPORT_DATE\n    JOIN items i ON i.ORDERID = o.ORDER_ID AND i.rn = 1\n    LEFT JOIN img g ON g.PRODUCT_ID = i.PRODUCTID\n    GROUP BY 1, 2, 3\n)\nSELECT REPORT_DATE,\n       PRODUCTTITLE || ' — ' || COLOR AS STYLE_COLOR,\n       IMAGE_URL,\n       UNITS,\n       AMT,\n       ROW_NUMBER() OVER (PARTITION BY REPORT_DATE\n                          ORDER BY UNITS DESC, AMT DESC) AS RANK_IN_MONTH\nFROM agg\nQUALIFY RANK_IN_MONTH <= 5\n"
+        },
+        "columns": [
+          {
+            "id": "REPORT_DATE",
+            "formula": "[Custom SQL/REPORT_DATE]",
+            "name": "Report date",
+            "format": {
+              "kind": "datetime",
+              "formatString": "%m/%d/%Y"
+            },
+            "hidden": true
+          },
+          {
+            "id": "RANK_IN_MONTH",
+            "formula": "[Custom SQL/RANK_IN_MONTH]",
+            "name": "#",
+            "format": {
+              "kind": "number",
+              "formatString": ",d"
+            },
+            "hidden": true
+          },
+          {
+            "id": "IMAGE_URL",
+            "formula": "[Custom SQL/IMAGE_URL]",
+            "name": " ",
+            "image": {
+              "type": "fixed",
+              "height": 44,
+              "width": 44,
+              "preserveAspectRatio": "preserve"
+            }
+          },
+          {
+            "id": "STYLE_COLOR",
+            "formula": "[Custom SQL/STYLE_COLOR]",
+            "name": "Style / colour"
+          },
+          {
+            "id": "UNITS",
+            "formula": "[Custom SQL/UNITS]",
+            "name": "Units",
+            "format": {
+              "kind": "number",
+              "formatString": ",d"
+            }
+          },
+          {
+            "id": "AMT",
+            "formula": "[Custom SQL/AMT]",
+            "name": "$",
+            "format": {
+              "kind": "number",
+              "formatString": "$,.0f",
+              "currencySymbol": "$"
+            }
+          }
+        ],
+        "name": "NASHVILLE",
+        "order": [
+          "REPORT_DATE",
+          "RANK_IN_MONTH",
+          "IMAGE_URL",
+          "STYLE_COLOR",
+          "UNITS",
+          "AMT"
+        ],
+        "visibleAsSource": true,
+        "sort": [
+          {
+            "columnId": "RANK_IN_MONTH",
+            "direction": "ascending",
+            "nulls": "last"
+          }
+        ]
+      },
+      {
         "id": "txt_top_heading",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A\">TOP 10 SOLD &amp; RETURNED</span></p>"
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A; font-size: 12px\">TOP 10 — STYLE / COLOUR / UNITS (YESTERDAY ECOM)</span></p>"
       },
       {
         "id": "tbl_top_sold",
         "kind": "table",
         "source": {
           "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
-          "kind": "warehouse-table",
-          "path": [
-            "SANDBOX",
-            "SBX_RRAJASEKAR",
-            "TB_SIGMA_DAILY_TOP_STYLES"
-          ]
+          "kind": "sql",
+          "statement": "WITH img AS (\n    SELECT UPPER(TRIM(\"title\")) AS PRODUCT_TITLE,\n           MAX_BY(\"featuredImageUrl\", \"loadTimestamp\") AS IMAGE_URL\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_PRODUCT_ADF\n    WHERE \"featuredImageUrl\" IS NOT NULL\n    GROUP BY 1\n)\nSELECT t.BRAND_LABEL,\n       t.REPORT_DATE,\n       t.RANK_IN_DAY,\n       t.STYLE || ' — ' || t.COLOR AS STYLE_COLOR,\n       t.QTY                       AS UNITS,\n       t.DEMAND_AMT,\n       img.IMAGE_URL\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_DAILY_TOP_STYLES t\nLEFT JOIN img ON img.PRODUCT_TITLE = UPPER(TRIM(t.STYLE))\nWHERE t.RANK_IN_DAY <= 10\n"
         },
         "columns": [
           {
             "id": "BRAND_LABEL",
-            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/BRAND_LABEL]",
+            "formula": "[Custom SQL/BRAND_LABEL]",
             "name": "Brand",
             "hidden": true
           },
           {
             "id": "REPORT_DATE",
-            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/REPORT_DATE]",
+            "formula": "[Custom SQL/REPORT_DATE]",
             "name": "Report date",
             "format": {
               "kind": "datetime",
@@ -898,7 +1263,7 @@
           },
           {
             "id": "RANK_IN_DAY",
-            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/RANK_IN_DAY]",
+            "formula": "[Custom SQL/RANK_IN_DAY]",
             "name": "#",
             "format": {
               "kind": "number",
@@ -906,13 +1271,24 @@
             }
           },
           {
+            "id": "IMAGE_URL",
+            "formula": "[Custom SQL/IMAGE_URL]",
+            "name": " ",
+            "image": {
+              "type": "fixed",
+              "height": 44,
+              "width": 44,
+              "preserveAspectRatio": "preserve"
+            }
+          },
+          {
             "id": "STYLE_COLOR",
-            "formula": "Concat([TB_SIGMA_DAILY_TOP_STYLES/STYLE], \" — \", [TB_SIGMA_DAILY_TOP_STYLES/COLOR])",
+            "formula": "[Custom SQL/STYLE_COLOR]",
             "name": "Style / colour"
           },
           {
             "id": "UNITS",
-            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/QTY]",
+            "formula": "[Custom SQL/UNITS]",
             "name": "Units",
             "format": {
               "kind": "number",
@@ -921,7 +1297,7 @@
           },
           {
             "id": "DEMAND_AMT",
-            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/DEMAND_AMT]",
+            "formula": "[Custom SQL/DEMAND_AMT]",
             "name": "Demand $",
             "format": {
               "kind": "number",
@@ -930,16 +1306,17 @@
             }
           }
         ],
+        "name": "Top 10 sold",
         "order": [
           "BRAND_LABEL",
           "REPORT_DATE",
           "RANK_IN_DAY",
+          "IMAGE_URL",
           "STYLE_COLOR",
           "UNITS",
           "DEMAND_AMT"
         ],
         "visibleAsSource": true,
-        "name": "Top 10 sold",
         "sort": [
           {
             "columnId": "RANK_IN_DAY",
@@ -956,23 +1333,19 @@
         "kind": "table",
         "source": {
           "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
-          "kind": "warehouse-table",
-          "path": [
-            "SANDBOX",
-            "SBX_RRAJASEKAR",
-            "TB_SIGMA_TOP_RETURNS"
-          ]
+          "kind": "sql",
+          "statement": "WITH img AS (\n    SELECT UPPER(TRIM(\"title\")) AS PRODUCT_TITLE,\n           MAX_BY(\"featuredImageUrl\", \"loadTimestamp\") AS IMAGE_URL\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_PRODUCT_ADF\n    WHERE \"featuredImageUrl\" IS NOT NULL\n    GROUP BY 1\n)\nSELECT r.BRAND_LABEL,\n       r.REPORT_DATE,\n       r.RANK_IN_DAY,\n       r.STYLE || ' — ' || r.COLOR AS STYLE_COLOR,\n       r.QTY                       AS UNITS,\n       img.IMAGE_URL\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_TOP_RETURNS r\nLEFT JOIN img ON img.PRODUCT_TITLE = UPPER(TRIM(r.STYLE))\nWHERE r.RANK_IN_DAY <= 10\n"
         },
         "columns": [
           {
             "id": "BRAND_LABEL",
-            "formula": "[TB_SIGMA_TOP_RETURNS/BRAND_LABEL]",
+            "formula": "[Custom SQL/BRAND_LABEL]",
             "name": "Brand",
             "hidden": true
           },
           {
             "id": "REPORT_DATE",
-            "formula": "[TB_SIGMA_TOP_RETURNS/REPORT_DATE]",
+            "formula": "[Custom SQL/REPORT_DATE]",
             "name": "Report date",
             "format": {
               "kind": "datetime",
@@ -982,7 +1355,7 @@
           },
           {
             "id": "RANK_IN_DAY",
-            "formula": "[TB_SIGMA_TOP_RETURNS/RANK_IN_DAY]",
+            "formula": "[Custom SQL/RANK_IN_DAY]",
             "name": "#",
             "format": {
               "kind": "number",
@@ -990,13 +1363,24 @@
             }
           },
           {
+            "id": "IMAGE_URL",
+            "formula": "[Custom SQL/IMAGE_URL]",
+            "name": " ",
+            "image": {
+              "type": "fixed",
+              "height": 44,
+              "width": 44,
+              "preserveAspectRatio": "preserve"
+            }
+          },
+          {
             "id": "STYLE_COLOR",
-            "formula": "Concat([TB_SIGMA_TOP_RETURNS/STYLE], \" — \", [TB_SIGMA_TOP_RETURNS/COLOR])",
+            "formula": "[Custom SQL/STYLE_COLOR]",
             "name": "Style / colour"
           },
           {
             "id": "UNITS",
-            "formula": "[TB_SIGMA_TOP_RETURNS/QTY]",
+            "formula": "[Custom SQL/UNITS]",
             "name": "Units",
             "format": {
               "kind": "number",
@@ -1004,15 +1388,16 @@
             }
           }
         ],
+        "name": "Top 10 returned",
         "order": [
           "BRAND_LABEL",
           "REPORT_DATE",
           "RANK_IN_DAY",
+          "IMAGE_URL",
           "STYLE_COLOR",
           "UNITS"
         ],
         "visibleAsSource": true,
-        "name": "Top 10 returned",
         "sort": [
           {
             "columnId": "RANK_IN_DAY",
@@ -1027,267 +1412,7 @@
       {
         "id": "txt_footer",
         "kind": "text",
-        "body": "<p class=\"p-large\"><span style=\"color: #8A8A8A\">Daily send (no weekend rollups). Promo copy from the Marketing Calendar; promo purchase $ = Shopify TOTALDISCOUNT on in-scope orders. Top 10 returned is Shopify refunds only — not the Loop return rate, which is not yet in Snowflake.</span></p>"
-      },
-      {
-        "id": "tbl_glance",
-        "kind": "table",
-        "source": {
-          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
-          "kind": "warehouse-table",
-          "path": [
-            "SANDBOX",
-            "SBX_RRAJASEKAR",
-            "TB_SIGMA_QA_GLANCE_BRAND"
-          ]
-        },
-        "columns": [
-          {
-            "id": "BRAND_LABEL",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/BRAND_LABEL]",
-            "name": "Brand"
-          },
-          {
-            "id": "REPORT_DATE",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/REPORT_DATE]",
-            "name": "Report date",
-            "format": {
-              "kind": "datetime",
-              "formatString": "%m/%d/%Y"
-            }
-          },
-          {
-            "id": "BRAND_DISPLAY_NAME",
-            "formula": "Switch([TB_SIGMA_QA_GLANCE_BRAND/BRAND_ID], \"hudson-jeans\", \"Hudson Jeans\", \"favorite-daughter\", \"Favorite Daughter\", \"joes-jeans\", \"Joe's Jeans\", [TB_SIGMA_QA_GLANCE_BRAND/BRAND_LABEL])",
-            "name": "Brand display name"
-          },
-          {
-            "id": "SAME_DAY_LY_DATE",
-            "formula": "DateAdd(\"day\", -364, [TB_SIGMA_QA_GLANCE_BRAND/REPORT_DATE])",
-            "name": "Same day LY",
-            "format": {
-              "kind": "datetime",
-              "formatString": "%m/%d/%Y"
-            }
-          },
-          {
-            "id": "Yesterday demand",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/YESTERDAY_DEMAND]",
-            "name": "Yesterday demand",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "Yesterday plan",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/Y_DEMAND_PLAN]",
-            "name": "Yesterday plan",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "Same day LY demand",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/SAME_DAY_LY_DEMAND]",
-            "name": "Same day LY demand",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "MTD demand",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/MTD_DEMAND]",
-            "name": "MTD demand",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "LY MTD demand",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/LY_MTD_DEMAND]",
-            "name": "LY MTD demand",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "Month plan",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/TOTAL_MONTH_PLAN]",
-            "name": "Month plan",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "PCT_YEST_VS_PLAN",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN]",
-            "name": "Yest vs plan",
-            "format": {
-              "kind": "number",
-              "formatString": ",.1%"
-            }
-          },
-          {
-            "id": "TREND_YEST_VS_PLAN",
-            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN] < 0, \"down\", \"flat\")))",
-            "name": "Trend — yest vs plan"
-          },
-          {
-            "id": "PCT_YEST_VS_LY",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY]",
-            "name": "Yest vs LY",
-            "format": {
-              "kind": "number",
-              "formatString": ",.1%"
-            }
-          },
-          {
-            "id": "TREND_YEST_VS_LY",
-            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY] < 0, \"down\", \"flat\")))",
-            "name": "Trend — yest vs LY"
-          },
-          {
-            "id": "PCT_MTD_VS_PLAN",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN]",
-            "name": "MTD vs plan",
-            "format": {
-              "kind": "number",
-              "formatString": ",.1%"
-            }
-          },
-          {
-            "id": "TREND_MTD_VS_PLAN",
-            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN] < 0, \"down\", \"flat\")))",
-            "name": "Trend — MTD vs plan"
-          },
-          {
-            "id": "PCT_MTD_VS_LY",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY]",
-            "name": "MTD vs LY",
-            "format": {
-              "kind": "number",
-              "formatString": ",.1%"
-            }
-          },
-          {
-            "id": "TREND_MTD_VS_LY",
-            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY] < 0, \"down\", \"flat\")))",
-            "name": "Trend — MTD vs LY"
-          },
-          {
-            "id": "To-go",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/TO_GO_VS_PLAN]",
-            "name": "To-go",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "Pct plan achieved",
-            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_PLAN_ACHIEVED]",
-            "name": "% plan achieved",
-            "format": {
-              "kind": "number",
-              "formatString": ",.1%"
-            }
-          }
-        ],
-        "order": [
-          "BRAND_LABEL",
-          "REPORT_DATE",
-          "BRAND_DISPLAY_NAME",
-          "SAME_DAY_LY_DATE",
-          "Yesterday demand",
-          "Yesterday plan",
-          "Same day LY demand",
-          "MTD demand",
-          "LY MTD demand",
-          "Month plan",
-          "PCT_YEST_VS_PLAN",
-          "TREND_YEST_VS_PLAN",
-          "PCT_YEST_VS_LY",
-          "TREND_YEST_VS_LY",
-          "PCT_MTD_VS_PLAN",
-          "TREND_MTD_VS_PLAN",
-          "PCT_MTD_VS_LY",
-          "TREND_MTD_VS_LY",
-          "To-go",
-          "Pct plan achieved"
-        ],
-        "visibleAsSource": true,
-        "name": "Glance",
-        "tableStyle": {
-          "banding": "shown"
-        }
-      },
-      {
-        "id": "tbl_promo_totals",
-        "kind": "table",
-        "source": {
-          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
-          "kind": "sql",
-          "statement": "-- Promo purchase $ — see sql/el_promo.sql for the annotated original.\n-- Shopify keeps one row per pipeline load, so de-duplicate to the latest row\n-- per order id, then join the in-scope order list to it so the promo figure\n-- inherits exactly the same scope filter as the demand numbers.\nWITH shopify_latest AS (\n    SELECT s.ID,\n           s.TOTALDISCOUNT,\n           ROW_NUMBER() OVER (PARTITION BY s.ID ORDER BY s.CREATEDAT DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF s\n)\nSELECT o.BRAND_LABEL,\n       o.REPORT_DATE,\n       SUM(COALESCE(sl.TOTALDISCOUNT, 0))          AS PROMO_DISCOUNT_AMT,\n       COUNT_IF(COALESCE(sl.TOTALDISCOUNT, 0) > 0) AS PROMO_ORDERS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_ORDERS_QA o\nLEFT JOIN shopify_latest sl\n       ON sl.ID = o.ORDER_ID\n      AND sl.rn = 1\nGROUP BY o.BRAND_LABEL, o.REPORT_DATE\n"
-        },
-        "columns": [
-          {
-            "id": "BRAND_LABEL",
-            "formula": "[Custom SQL/BRAND_LABEL]",
-            "name": "Brand"
-          },
-          {
-            "id": "REPORT_DATE",
-            "formula": "[Custom SQL/REPORT_DATE]",
-            "name": "Report date",
-            "format": {
-              "kind": "datetime",
-              "formatString": "%m/%d/%Y"
-            }
-          },
-          {
-            "id": "Promo discount",
-            "formula": "[Custom SQL/PROMO_DISCOUNT_AMT]",
-            "name": "Promo discount",
-            "format": {
-              "kind": "number",
-              "formatString": "$,.0f",
-              "currencySymbol": "$"
-            }
-          },
-          {
-            "id": "Promo orders",
-            "formula": "[Custom SQL/PROMO_ORDERS]",
-            "name": "Promo orders",
-            "format": {
-              "kind": "number",
-              "formatString": ",d"
-            }
-          }
-        ],
-        "order": [
-          "BRAND_LABEL",
-          "REPORT_DATE",
-          "Promo discount",
-          "Promo orders"
-        ],
-        "visibleAsSource": true,
-        "name": "Promo totals",
-        "tableStyle": {
-          "banding": "shown"
-        }
+        "body": "<p class=\"p-large\"><span style=\"color: #888888; font-size: 12px\">Daily send (no weekend rollups). LY = same weekday (−364). Promo copy from the Marketing Calendar; promo purchase $ = Shopify TOTALDISCOUNT on in-scope orders. Top 10 returned is Shopify refunds only — not the Loop return rate, which is not yet in Snowflake.</span></p>"
       }
     ],
     "pages": [
@@ -1295,13 +1420,8 @@
         "id": "page_mail",
         "name": "Daily Ecom Mail",
         "pageWidth": "full"
-      },
-      {
-        "id": "page_data",
-        "name": "Data",
-        "visibility": "hidden"
       }
     ],
-    "layout": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Page type=\"grid\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\" id=\"page_mail\">\n  <Container elementId=\"ctr_banner\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"1 / 4\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"txt_title\" gridColumn=\"1 / 25\" gridRow=\"1 / 2\"/>\n    <Element elementId=\"txt_scope\" gridColumn=\"1 / 25\" gridRow=\"2 / 4\"/>\n  </Container>\n  <Element elementId=\"ctrl_brand\" gridColumn=\"1 / 7\" gridRow=\"4 / 5\"/>\n  <Element elementId=\"ctrl_dates\" gridColumn=\"7 / 16\" gridRow=\"4 / 5\"/>\n  <Element elementId=\"txt_kpi_heading\" gridColumn=\"1 / 25\" gridRow=\"5 / 6\"/>\n  <Element elementId=\"kpi_yest_vs_plan\" gridColumn=\"1 / 7\" gridRow=\"6 / 9\"/>\n  <Element elementId=\"kpi_yest_vs_ly\" gridColumn=\"7 / 13\" gridRow=\"6 / 9\"/>\n  <Element elementId=\"kpi_mtd_vs_plan\" gridColumn=\"13 / 19\" gridRow=\"6 / 9\"/>\n  <Element elementId=\"kpi_mtd_vs_ly\" gridColumn=\"19 / 25\" gridRow=\"6 / 9\"/>\n  <Element elementId=\"txt_promo_heading\" gridColumn=\"1 / 25\" gridRow=\"9 / 10\"/>\n  <Element elementId=\"tbl_promo\" gridColumn=\"1 / 13\" gridRow=\"10 / 14\"/>\n  <Element elementId=\"kpi_promo_amt\" gridColumn=\"13 / 19\" gridRow=\"10 / 14\"/>\n  <Element elementId=\"kpi_promo_orders\" gridColumn=\"19 / 25\" gridRow=\"10 / 14\"/>\n  <Element elementId=\"txt_perf_heading\" gridColumn=\"1 / 25\" gridRow=\"14 / 15\"/>\n  <Element elementId=\"tbl_performance\" gridColumn=\"1 / 25\" gridRow=\"15 / 27\"/>\n  <Element elementId=\"txt_kpi_note\" gridColumn=\"1 / 25\" gridRow=\"27 / 28\"/>\n  <Element elementId=\"txt_channel_heading\" gridColumn=\"1 / 25\" gridRow=\"28 / 29\"/>\n  <Element elementId=\"tbl_channel_dtc\" gridColumn=\"1 / 25\" gridRow=\"29 / 34\"/>\n  <Element elementId=\"txt_top_heading\" gridColumn=\"1 / 25\" gridRow=\"34 / 35\"/>\n  <Element elementId=\"tbl_top_sold\" gridColumn=\"1 / 13\" gridRow=\"35 / 47\"/>\n  <Element elementId=\"tbl_top_returned\" gridColumn=\"13 / 25\" gridRow=\"35 / 47\"/>\n  <Element elementId=\"txt_footer\" gridColumn=\"1 / 25\" gridRow=\"47 / 49\"/>\n</Page>\n<Page type=\"grid\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\" id=\"page_data\">\n  <Element elementId=\"tbl_glance\" gridColumn=\"1 / 25\" gridRow=\"1 / 15\"/>\n  <Element elementId=\"tbl_promo_totals\" gridColumn=\"1 / 25\" gridRow=\"15 / 23\"/>\n</Page>\n"
+    "layout": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Page type=\"grid\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\" id=\"page_mail\">\n  <Container elementId=\"ctr_banner\" type=\"grid\" gridColumn=\"1 / 25\" gridRow=\"1 / 5\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\">\n    <Element elementId=\"txt_title\" gridColumn=\"1 / 25\" gridRow=\"1 / 2\"/>\n    <Element elementId=\"txt_kicker\" gridColumn=\"1 / 25\" gridRow=\"2 / 3\"/>\n    <Element elementId=\"txt_scope\" gridColumn=\"1 / 25\" gridRow=\"3 / 5\"/>\n  </Container>\n  <Element elementId=\"ctrl_brand\" gridColumn=\"1 / 7\" gridRow=\"5 / 6\"/>\n  <Element elementId=\"ctrl_dates\" gridColumn=\"7 / 16\" gridRow=\"5 / 6\"/>\n  <Element elementId=\"txt_retail_added\" gridColumn=\"1 / 25\" gridRow=\"6 / 7\"/>\n  <Element elementId=\"kpi_retail_amt\" gridColumn=\"1 / 13\" gridRow=\"7 / 10\"/>\n  <Element elementId=\"kpi_retail_orders\" gridColumn=\"13 / 25\" gridRow=\"7 / 10\"/>\n  <Element elementId=\"txt_glance_heading\" gridColumn=\"1 / 25\" gridRow=\"10 / 11\"/>\n  <Element elementId=\"kpi_yest_vs_plan\" gridColumn=\"1 / 7\" gridRow=\"11 / 14\"/>\n  <Element elementId=\"kpi_yest_vs_ly\" gridColumn=\"7 / 13\" gridRow=\"11 / 14\"/>\n  <Element elementId=\"kpi_mtd_vs_plan\" gridColumn=\"13 / 19\" gridRow=\"11 / 14\"/>\n  <Element elementId=\"kpi_mtd_vs_ly\" gridColumn=\"19 / 25\" gridRow=\"11 / 14\"/>\n  <Element elementId=\"txt_promo_heading\" gridColumn=\"1 / 25\" gridRow=\"14 / 15\"/>\n  <Element elementId=\"tbl_promo\" gridColumn=\"1 / 13\" gridRow=\"15 / 19\"/>\n  <Element elementId=\"kpi_promo_amt\" gridColumn=\"13 / 19\" gridRow=\"15 / 19\"/>\n  <Element elementId=\"kpi_promo_orders\" gridColumn=\"19 / 25\" gridRow=\"15 / 19\"/>\n  <Element elementId=\"txt_perf_heading\" gridColumn=\"1 / 25\" gridRow=\"19 / 20\"/>\n  <Element elementId=\"tbl_performance\" gridColumn=\"1 / 25\" gridRow=\"20 / 32\"/>\n  <Element elementId=\"txt_kpi_note\" gridColumn=\"1 / 25\" gridRow=\"32 / 33\"/>\n  <Element elementId=\"txt_channel_heading\" gridColumn=\"1 / 25\" gridRow=\"33 / 34\"/>\n  <Element elementId=\"tbl_channel_dtc\" gridColumn=\"1 / 25\" gridRow=\"34 / 39\"/>\n  <Element elementId=\"txt_channel_note\" gridColumn=\"1 / 25\" gridRow=\"39 / 40\"/>\n  <Element elementId=\"txt_stores_heading\" gridColumn=\"1 / 25\" gridRow=\"40 / 41\"/>\n  <Element elementId=\"tbl_store_0\" gridColumn=\"1 / 9\" gridRow=\"41 / 49\"/>\n  <Element elementId=\"tbl_store_1\" gridColumn=\"9 / 17\" gridRow=\"41 / 49\"/>\n  <Element elementId=\"tbl_store_2\" gridColumn=\"17 / 25\" gridRow=\"41 / 49\"/>\n  <Element elementId=\"txt_top_heading\" gridColumn=\"1 / 25\" gridRow=\"49 / 50\"/>\n  <Element elementId=\"tbl_top_sold\" gridColumn=\"1 / 13\" gridRow=\"50 / 62\"/>\n  <Element elementId=\"tbl_top_returned\" gridColumn=\"13 / 25\" gridRow=\"50 / 62\"/>\n  <Element elementId=\"txt_footer\" gridColumn=\"1 / 25\" gridRow=\"62 / 64\"/>\n</Page>\n"
   }
 }

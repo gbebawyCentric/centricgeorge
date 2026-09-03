@@ -14,7 +14,11 @@ SQL in `sql/` was run against Snowflake and returns the values shown here.
 | `SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_CHANNEL_FD` | brand + day + channel | Retail + Total DTC (FD only) |
 | `SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_ORDERS_QA` | one in-scope ecom order | Promo discount scope |
 | `SANDBOX.SBX_RRAJASEKAR.ECOM_DAILY_PROMO` | brand + day | Scheduled promo / email copy |
-| `SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF` | order id, one row per load | `TOTALDISCOUNT` for promo purchase |
+| `SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_RETAIL_DAILY_PULSE` | brand + day | "Retail boutiques added" (FD only) |
+| `SANDBOX.SBX_RRAJASEKAR.VW_SIGMA_ORDERS_RETAIL` | one FD retail order | Top 5 MTD retail styles |
+| `SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF` | order id, one row per load | `TOTALDISCOUNT`; `RETAILLOCATIONNAME` for the boutique |
+| `SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDER_ITEMS_ADF` | one order line | Retail style / colour / units |
+| `SHOPIFY_APP.DEV_BRONZE.SHOPIFY_PRODUCT_ADF` | product | `featuredImageUrl` for the thumbnails |
 
 Connection: **Centric Brands POC** (`82dc9446-e21c-4484-987d-79b52a490e2a`).
 This is the connection the existing Ecom KPI QA workbook uses to read these same
@@ -24,31 +28,44 @@ is what earlier drafts named, but it is not demonstrated against these tables.
 
 ## Block by block
 
-Each element reads its table directly; the SQL is the reference copy of the
-logic, ported to column formulas in `scripts/build_spec.py`.
+There is **one workbook per brand** (`scripts/brands.py` holds the theme and
+copy). The SQL in `sql/` is the reference copy of the logic; most of it is
+ported to Sigma column formulas in `scripts/build_spec.py`, and the rest to
+inline SQL in `scripts/sources.py`.
 
 | Email block | Element | Source | Ported from |
 |---|---|---|---|
-| Banner + scope prose | `ctr_banner`, `txt_title`, `txt_scope` | static | `sql/el_header.sql` (prose only — see below) |
+| Banner, brand name, scope line | `ctr_banner`, `txt_title`, `txt_kicker`, `txt_scope` | static | `sql/el_header.sql` (prose only — see below) |
+| "Retail boutiques added" (FD) | `kpi_retail_amt`, `kpi_retail_orders` | inline SQL | — (new) |
 | Four KPI cards | `kpi_yest_vs_plan`, `kpi_yest_vs_ly`, `kpi_mtd_vs_plan`, `kpi_mtd_vs_ly` | `TB_SIGMA_QA_GLANCE_BRAND` | `sql/el_kpi_tiles.sql` |
 | "Promo & email" copy | `tbl_promo` | `ECOM_DAILY_PROMO` | `sql/el_promo.sql` (copy half) |
 | Promo purchase figures | `kpi_promo_amt`, `kpi_promo_orders` | inline SQL | `sql/el_promo.sql` (totals half) |
 | "Performance detail — ecom only" | `tbl_performance` | inline SQL | `sql/el_performance_grid.sql` |
-| "Retail + total DTC" | `tbl_channel_dtc` | `TB_SIGMA_CHANNEL_FD` | `sql/el_channel_dtc.sql` |
-| "Top 10 sold" | `tbl_top_sold` | `TB_SIGMA_DAILY_TOP_STYLES` | `sql/el_top_sold.sql` |
-| "Top 10 returned" | `tbl_top_returned` | `TB_SIGMA_TOP_RETURNS` | `sql/el_top_returned.sql` |
-| — (hidden Data page) | `tbl_glance`, `tbl_promo_totals` | `TB_SIGMA_QA_GLANCE_BRAND`, inline SQL | `sql/el_header.sql` |
+| "Retail + total DTC" (FD) | `tbl_channel_dtc` | `TB_SIGMA_CHANNEL_FD` | `sql/el_channel_dtc.sql` |
+| "Top 5 MTD retail styles" (FD) | `tbl_store_0..2` | inline SQL | — (new) |
+| Separate-platform note (Joe's) | `txt_retail_note` | static | — |
+| "Top 10 sold" | `tbl_top_sold` | inline SQL | `sql/el_top_sold.sql` |
+| "Top 10 returned" | `tbl_top_returned` | inline SQL | `sql/el_top_returned.sql` |
 
 The four KPI tiles were one row per tile, produced by a `UNION ALL` over a
 single glance row. A column formula cannot generate rows — but it does not need
 to here, because the four values are already four columns of that row. Each card
 reads its own value/comparison pair and Sigma renders the change between them.
-The ported `TREND_*` formulas live on `tbl_glance` on the hidden Data page.
 
-Each card reads the warehouse table directly rather than sourcing from
-`tbl_glance`. A cross-element formula like `Sum([Yesterday demand])` does not
-resolve through the API — it comes back as `Unknown column` — whereas the
+Each card reads its warehouse table directly rather than sourcing from another
+element. A cross-element formula like `Sum([Yesterday demand])` does not resolve
+through the API — it comes back as `Unknown column` — whereas the
 `[TABLE/COLUMN]` form does.
+
+**Top 5 MTD retail styles** has no pre-built table. It aggregates
+`VW_SIGMA_ORDERS_RETAIL` joined to `SHOPIFY_ORDER_ITEMS_ADF`, with the boutique
+from `SHOPIFY_ORDERS_ADF.RETAILLOCATIONNAME` (`Madison Avenue Boutique`,
+`Beverly Hills Boutique`, `Nashville Boutique`) and the thumbnail from
+`SHOPIFY_PRODUCT_ADF`. MTD is as-of the report date, not whole-month, so the
+element answers the same question on any day the control is set to. Colour is
+the variant title's first segment (`navy / one size` → `navy`), which is what
+the email prints and also collapses sizes of one colourway into a row. Ranking
+is units then dollars, which reproduces the email's tie order.
 
 Brands are `Hudson`, `FD`, `Joe's` (brand ids `hudson-jeans`, `favorite-daughter`,
 `joes-jeans`).
@@ -142,15 +159,17 @@ workbook elements rather than hand-built HTML:
    static body cannot do. They are all columns on `tbl_glance`; the prose around
    them is static. (An earlier draft of `build_spec.py` assumed a `{{COLUMN}}`
    placeholder syntax in text bodies. No such thing exists in the real schema.)
-1. **Product thumbnails.** The attachments show a 56px Shopify image beside each
-   top-10 row. `TB_SIGMA_DAILY_TOP_STYLES` carries no image URL; the URLs come
-   from `SHOPIFY_PRODUCT_ADF.featuredImageUrl`. Adding them means extending that
-   table with a product id and joining through.
-2. **Per-brand theming.** The emails are themed per brand (Hudson `#1B3A4B`,
-   Favorite Daughter `#6B1D32`, Joe's `#111111`). One workbook renders a single
-   theme for all three; `ACCENT` in `scripts/build_spec.py` sets it. Per-brand
-   colour needs either three workbooks or conditional formatting driven by a
-   brand-colour column.
+1. ~~**Product thumbnails.**~~ **Now built.** `TB_SIGMA_DAILY_TOP_STYLES` carries
+   no product id, but matching its `STYLE` against `SHOPIFY_PRODUCT_ADF."title"`
+   resolves `featuredImageUrl` for all 870 rows, and a Sigma column takes an
+   `image` key. The retail-styles grid joins on `PRODUCTID` instead, which is
+   exact. Note the featured image is per product, not per variant, so a colourway
+   shows its product's main image; variant-level images would need
+   `SHOPIFY_PRODUCT_VARIANT_ADF.imageId` → `SHOPIFY_PRODUCT_IMAGE_ADF`.
+2. ~~**Per-brand theming.**~~ **Now built.** There is one workbook per brand,
+   each themed from `scripts/brands.py` (Hudson `#1B3A4B`, Favorite Daughter
+   `#6B1D32`, Joe's `#111111` — taken from the rendered emails). Favorite
+   Daughter gets the retail sections; Joe's gets its separate-platform note.
 
 Plan data also exists for recent dates, so the tiles render real percentages
 rather than the "—" placeholders visible in the attachments.
