@@ -1,15 +1,18 @@
 """Dump the code representation of an existing Sigma workbook.
 
-Run this first. Workbooks-as-code is in private beta and its schema is not
-publicly documented, so the authoritative reference for the spec shape is a
-real workbook from this org:
+Workbooks-as-code is in private beta and its schema is not publicly documented,
+so the authoritative reference for the spec shape is a real workbook from this
+org:
 
     set -a && . ./.env && set +a
     python3 scripts/get_spec.py 6vUEJAG6qufed10qtaM140 -o reference_spec.json
 
-That id is the existing "Centric West - Ecom KPI QA" workbook. Compare its
-structure against sigma/workbook_spec.json and adjust the builder in
-scripts/build_spec.py to match before deploying.
+That id is the existing "Centric West - Ecom KPI QA" workbook. Its schema is
+already written up in docs/spec-schema.md — read that before re-deriving it
+from the JSON. Re-run this when the workbook changes or to check the write-up
+still holds.
+
+The output is gitignored: it carries connection UUIDs and internal table paths.
 """
 
 from __future__ import annotations

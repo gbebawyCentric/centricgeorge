@@ -47,24 +47,28 @@ No dependencies beyond Python 3.10+. Deploy is idempotent — it looks the
 workbook up by name and PATCHes when it already exists, so re-running will not
 leave duplicates.
 
-### Read this before the first deploy
+### Do not deploy yet — the builder does not match the real schema
 
-Workbooks-as-code is in private beta and its spec schema is not publicly
-documented. `sigma/workbook_spec.json` is written to the documented shape
-(`name` / `dataSources` / `pages` / `elements` / `layout`) but has **not** been
-validated against a live API, because Sigma's API is not reachable from the
-environment this was authored in.
+A real spec has now been pulled from the **Centric West - Ecom KPI QA**
+workbook, and `sigma/workbook_spec.json` is the wrong shape. Not a few key
+names — the structure differs at every level. `docs/spec-schema.md` records what
+the API actually returns and lists the gaps; the short version:
 
-So pull a real spec first and diff the shape:
+- everything belongs under a `document` object with `schemaVersion` and `kind`
+- elements are a flat list, not nested in pages, and typed with `kind`, not `type`
+- there is no `dataSources` array and no SQL — each element points at a
+  warehouse table and does its work in column formulas
+- layout is an XML CSS-grid string, not per-element `{x, y, width, height}`
+
+So `build_spec.py` needs rewriting, and there is an open question first: whether
+the queries in `sql/` become Snowflake views that elements point at, or get
+translated into Sigma column formulas. `docs/spec-schema.md` sets out both.
+
+Pull a fresh reference any time with:
 
 ```bash
 python3 scripts/get_spec.py 6vUEJAG6qufed10qtaM140 -o reference_spec.json
 ```
-
-That is the existing **Centric West - Ecom KPI QA** workbook. Compare it against
-`sigma/workbook_spec.json` and adjust the builder in `scripts/build_spec.py`
-where key names differ. Everything is generated from one place, so corrections
-are a single edit rather than a rewrite.
 
 If a deploy is rejected, `deploy.py` prints the API's validation body verbatim —
 that names the field it did not like.
