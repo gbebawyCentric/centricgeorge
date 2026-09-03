@@ -1,632 +1,620 @@
 {
   "name": "Centric West — Daily Ecom Mail",
-  "description": "Daily ecom recap for Hudson, Favorite Daughter and Joe's. Mirrors the daily recap email: narrative header, four plan-tracked KPI tiles, promo block, performance grid, FD retail/DTC split, and top 10 sold/returned. Pick a brand and report date, then schedule one send per brand.",
-  "controls": [
-    {
-      "id": "ctl_brand",
-      "type": "list",
-      "label": "Brand",
-      "values": [
-        "Hudson",
-        "FD",
-        "Joe's"
-      ],
-      "defaultValue": "Hudson",
-      "allowMultiple": false,
-      "allowEmpty": false
-    },
-    {
-      "id": "ctl_report_date",
-      "type": "date",
-      "label": "Report date",
-      "defaultValue": "yesterday"
-    }
-  ],
-  "dataSources": [
-    {
-      "id": "ds_header",
-      "type": "sql",
-      "connectionId": "0a226657-a09f-4684-9465-820374fb6c30",
-      "sql": "-- Element: txt_header  (the dark brand banner and its narrative paragraph)\n--\n-- Returns exactly one row. Every string the banner needs is assembled here so\n-- the workbook text element only has to interpolate columns, never compute.\n--\n-- LY is the same weekday last year (-364 days), matching the email footer note.\n\nWITH params AS (\n    SELECT :brand_label::TEXT AS brand_label,\n           :report_date::DATE AS report_date\n),\n\nglance AS (\n    SELECT g.*\n    FROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_GLANCE_BRAND g\n    JOIN params p\n      ON g.BRAND_LABEL = p.brand_label\n     AND g.REPORT_DATE = p.report_date\n)\n\nSELECT g.BRAND_LABEL,\n       g.BRAND_ID,\n       g.REPORT_DATE,\n\n       -- Display name as it appears in the banner headline.\n       CASE g.BRAND_ID\n            WHEN 'hudson-jeans'      THEN 'Hudson Jeans'\n            WHEN 'favorite-daughter' THEN 'Favorite Daughter'\n            WHEN 'joes-jeans'        THEN 'Joe''s Jeans'\n            ELSE g.BRAND_LABEL\n       END AS BRAND_DISPLAY_NAME,\n\n       -- Scope line under \"DAILY ECOM RECAP\"; each brand words this differently.\n       CASE g.BRAND_ID\n            WHEN 'hudson-jeans'      THEN 'Brand-owned website sales (Nordstrom marketplace excluded)'\n            WHEN 'favorite-daughter' THEN 'Brand-owned website (ecom) — retail boutiques shown separately below.'\n            ELSE 'Brand-owned website sales'\n       END AS SCOPE_LINE,\n\n       -- \"Today = Tuesday, 9/1/26\" / \"Same Day LY = Tuesday, 9/2/25\".\n       -- Built by hand rather than with TO_CHAR: Snowflake has no format token\n       -- for an unpadded month/day, and 'DAY' yields a blank-padded uppercase\n       -- name. DAYNAME is mapped explicitly so the result does not depend on\n       -- the session WEEK_START setting.\n       DECODE(DAYNAME(g.REPORT_DATE),\n              'Mon', 'Monday',   'Tue', 'Tuesday', 'Wed', 'Wednesday',\n              'Thu', 'Thursday', 'Fri', 'Friday',  'Sat', 'Saturday',\n              'Sun', 'Sunday')\n         || ', ' || MONTH(g.REPORT_DATE)\n         || '/'  || DAY(g.REPORT_DATE)\n         || '/'  || RIGHT(TO_VARCHAR(YEAR(g.REPORT_DATE)), 2) AS TODAY_LABEL,\n\n       DECODE(DAYNAME(DATEADD(day, -364, g.REPORT_DATE)),\n              'Mon', 'Monday',   'Tue', 'Tuesday', 'Wed', 'Wednesday',\n              'Thu', 'Thursday', 'Fri', 'Friday',  'Sat', 'Saturday',\n              'Sun', 'Sunday')\n         || ', ' || MONTH(DATEADD(day, -364, g.REPORT_DATE))\n         || '/'  || DAY(DATEADD(day, -364, g.REPORT_DATE))\n         || '/'  || RIGHT(TO_VARCHAR(YEAR(DATEADD(day, -364, g.REPORT_DATE))), 2) AS SAME_DAY_LY_LABEL,\n\n       DATEADD(day, -364, g.REPORT_DATE)                           AS SAME_DAY_LY_DATE,\n\n       -- Raw values behind the narrative sentence.\n       g.YESTERDAY_DEMAND,\n       g.Y_DEMAND_PLAN,\n       g.PCT_YEST_VS_PLAN,\n       g.PCT_YEST_VS_LY,\n       g.MTD_DEMAND,\n       g.TOTAL_MONTH_PLAN,\n       g.PCT_MTD_VS_PLAN,\n       g.PCT_MTD_VS_LY\nFROM glance g\n",
-      "parameters": {
-        "brand_label": {
-          "control": "ctl_brand"
-        },
-        "report_date": {
-          "control": "ctl_report_date"
+  "description": "Daily ecom recap for Hudson, Favorite Daughter and Joe's. Mirrors the daily recap email: KPI tiles, promo block, performance grid, FD retail/DTC split, and top 10 sold/returned. Pick a brand and report date, then schedule one send per brand.",
+  "document": {
+    "schemaVersion": 1,
+    "kind": "workbook",
+    "elements": [
+      {
+        "id": "txt_title",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #1B3A4B\">Centric West — Daily ecom recap</span></p>"
+      },
+      {
+        "id": "txt_sub",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A\">Brand-owned website sales. Hudson excludes the Nordstrom marketplace; Favorite Daughter shows its retail boutiques separately below. LY = same weekday last year (−364 days). Pick a brand and a report date; a scheduled export per brand sends the recap.</span></p>"
+      },
+      {
+        "kind": "control",
+        "controlId": "Brand",
+        "id": "ctrl_brand",
+        "name": "Brand",
+        "controlType": "list",
+        "mode": "include",
+        "selectionMode": "single",
+        "value": null,
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_glance"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_performance"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_channel_dtc"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_sold"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_returned"
+            },
+            "columnId": "BRAND_LABEL"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_promo"
+            },
+            "columnId": "BRAND_LABEL"
+          }
+        ],
+        "source": {
+          "kind": "source",
+          "source": {
+            "kind": "table",
+            "elementId": "tbl_glance"
+          },
+          "columnId": "BRAND_LABEL"
         }
+      },
+      {
+        "kind": "control",
+        "controlId": "ReportDate",
+        "id": "ctrl_dates",
+        "name": "Report date",
+        "controlType": "date-range",
+        "mode": "between",
+        "includeNulls": "always",
+        "filters": [
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_glance"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_performance"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_channel_dtc"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_sold"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_top_returned"
+            },
+            "columnId": "REPORT_DATE"
+          },
+          {
+            "source": {
+              "kind": "table",
+              "elementId": "tbl_promo"
+            },
+            "columnId": "PROMO_DATE"
+          }
+        ]
+      },
+      {
+        "id": "txt_kpi_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #1B3A4B\">Ecom KPIs (plan-tracked)</span></p>"
+      },
+      {
+        "id": "tbl_glance",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "warehouse-table",
+          "path": [
+            "SANDBOX",
+            "SBX_RRAJASEKAR",
+            "TB_SIGMA_QA_GLANCE_BRAND"
+          ]
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/BRAND_LABEL]",
+            "name": "Brand"
+          },
+          {
+            "id": "REPORT_DATE",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/REPORT_DATE]",
+            "name": "Report date"
+          },
+          {
+            "id": "BRAND_DISPLAY_NAME",
+            "formula": "Switch([TB_SIGMA_QA_GLANCE_BRAND/BRAND_ID], \"hudson-jeans\", \"Hudson Jeans\", \"favorite-daughter\", \"Favorite Daughter\", \"joes-jeans\", \"Joe's Jeans\", [TB_SIGMA_QA_GLANCE_BRAND/BRAND_LABEL])",
+            "name": "Brand display name"
+          },
+          {
+            "id": "SAME_DAY_LY_DATE",
+            "formula": "DateAdd(\"day\", -364, [TB_SIGMA_QA_GLANCE_BRAND/REPORT_DATE])",
+            "name": "Same day LY"
+          },
+          {
+            "id": "YESTERDAY_DEMAND",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/YESTERDAY_DEMAND]",
+            "name": "Yesterday demand $"
+          },
+          {
+            "id": "Y_DEMAND_PLAN",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/Y_DEMAND_PLAN]",
+            "name": "Yesterday plan $"
+          },
+          {
+            "id": "SAME_DAY_LY_DEMAND",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/SAME_DAY_LY_DEMAND]",
+            "name": "Same day LY $"
+          },
+          {
+            "id": "PCT_YEST_VS_PLAN",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN]",
+            "name": "Yest vs plan"
+          },
+          {
+            "id": "TREND_YEST_VS_PLAN",
+            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_PLAN] < 0, \"down\", \"flat\")))",
+            "name": "Trend — yest vs plan"
+          },
+          {
+            "id": "PCT_YEST_VS_LY",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY]",
+            "name": "Yest vs LY"
+          },
+          {
+            "id": "TREND_YEST_VS_LY",
+            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_YEST_VS_LY] < 0, \"down\", \"flat\")))",
+            "name": "Trend — yest vs LY"
+          },
+          {
+            "id": "MTD_DEMAND",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/MTD_DEMAND]",
+            "name": "MTD demand $"
+          },
+          {
+            "id": "LY_MTD_DEMAND",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/LY_MTD_DEMAND]",
+            "name": "LY MTD $"
+          },
+          {
+            "id": "TOTAL_MONTH_PLAN",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/TOTAL_MONTH_PLAN]",
+            "name": "Month plan $"
+          },
+          {
+            "id": "PCT_MTD_VS_PLAN",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN]",
+            "name": "MTD vs plan"
+          },
+          {
+            "id": "TREND_MTD_VS_PLAN",
+            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_PLAN] < 0, \"down\", \"flat\")))",
+            "name": "Trend — MTD vs plan"
+          },
+          {
+            "id": "PCT_MTD_VS_LY",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY]",
+            "name": "MTD vs LY"
+          },
+          {
+            "id": "TREND_MTD_VS_LY",
+            "formula": "If(IsNull([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY]), \"none\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY] > 0, \"up\", If([TB_SIGMA_QA_GLANCE_BRAND/PCT_MTD_VS_LY] < 0, \"down\", \"flat\")))",
+            "name": "Trend — MTD vs LY"
+          },
+          {
+            "id": "TO_GO_VS_PLAN",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/TO_GO_VS_PLAN]",
+            "name": "To-go $"
+          },
+          {
+            "id": "PCT_PLAN_ACHIEVED",
+            "formula": "[TB_SIGMA_QA_GLANCE_BRAND/PCT_PLAN_ACHIEVED]",
+            "name": "% plan achieved"
+          }
+        ],
+        "name": "Ecom KPIs (plan-tracked)",
+        "order": [
+          "BRAND_LABEL",
+          "REPORT_DATE",
+          "BRAND_DISPLAY_NAME",
+          "SAME_DAY_LY_DATE",
+          "YESTERDAY_DEMAND",
+          "Y_DEMAND_PLAN",
+          "SAME_DAY_LY_DEMAND",
+          "PCT_YEST_VS_PLAN",
+          "TREND_YEST_VS_PLAN",
+          "PCT_YEST_VS_LY",
+          "TREND_YEST_VS_LY",
+          "MTD_DEMAND",
+          "LY_MTD_DEMAND",
+          "TOTAL_MONTH_PLAN",
+          "PCT_MTD_VS_PLAN",
+          "TREND_MTD_VS_PLAN",
+          "PCT_MTD_VS_LY",
+          "TREND_MTD_VS_LY",
+          "TO_GO_VS_PLAN",
+          "PCT_PLAN_ACHIEVED"
+        ],
+        "visibleAsSource": false
+      },
+      {
+        "id": "txt_promo_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #1B3A4B\">Promo & email</span></p>"
+      },
+      {
+        "id": "tbl_promo",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "warehouse-table",
+          "path": [
+            "SANDBOX",
+            "SBX_RRAJASEKAR",
+            "ECOM_DAILY_PROMO"
+          ]
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "Switch([ECOM_DAILY_PROMO/BRAND_ID], \"hudson-jeans\", \"Hudson\", \"favorite-daughter\", \"FD\", \"joes-jeans\", \"Joe's\", [ECOM_DAILY_PROMO/BRAND_ID])",
+            "name": "Brand"
+          },
+          {
+            "id": "PROMO_DATE",
+            "formula": "[ECOM_DAILY_PROMO/PROMO_DATE]",
+            "name": "Date"
+          },
+          {
+            "id": "PROMO_TEXT",
+            "formula": "If(Trim(Coalesce([ECOM_DAILY_PROMO/PROMO_TEXT], \"\")) = \"\", \"— (none on Marketing Calendar for this day)\", [ECOM_DAILY_PROMO/PROMO_TEXT])",
+            "name": "Promo"
+          },
+          {
+            "id": "EMAIL_TEXT",
+            "formula": "If(Trim(Coalesce([ECOM_DAILY_PROMO/EMAIL_TEXT], \"\")) = \"\", \"—\", [ECOM_DAILY_PROMO/EMAIL_TEXT])",
+            "name": "Email"
+          }
+        ],
+        "name": "Promo & email",
+        "order": [
+          "BRAND_LABEL",
+          "PROMO_DATE",
+          "PROMO_TEXT",
+          "EMAIL_TEXT"
+        ],
+        "visibleAsSource": false
+      },
+      {
+        "id": "txt_perf_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #1B3A4B\">Performance detail — ecom only</span></p>"
+      },
+      {
+        "id": "tbl_performance",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "warehouse-table",
+          "path": [
+            "SANDBOX",
+            "SBX_RRAJASEKAR",
+            "TB_SIGMA_QA_KPI_LONG_BRAND"
+          ]
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/BRAND_LABEL]",
+            "name": "Brand"
+          },
+          {
+            "id": "REPORT_DATE",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/REPORT_DATE]",
+            "name": "Report date"
+          },
+          {
+            "id": "METRIC_SORT",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/METRIC_SORT]",
+            "name": "Order"
+          },
+          {
+            "id": "METRIC",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/METRIC]",
+            "name": "Metric"
+          },
+          {
+            "id": "YESTERDAY",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/YESTERDAY]",
+            "name": "Yesterday"
+          },
+          {
+            "id": "SAME_DAY_LY",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/SAME_DAY_LY]",
+            "name": "Same Day LY"
+          },
+          {
+            "id": "MTD",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/MTD]",
+            "name": "MTD"
+          },
+          {
+            "id": "LY_MTD",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/LY_MTD]",
+            "name": "LY MTD"
+          },
+          {
+            "id": "TOTAL_MONTH_PLAN",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/TOTAL_MONTH_PLAN]",
+            "name": "Month Plan"
+          },
+          {
+            "id": "TO_GO_VS_PLAN",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/TO_GO_VS_PLAN]",
+            "name": "To-Go $"
+          },
+          {
+            "id": "PCT_PLAN_ACHIEVED",
+            "formula": "[TB_SIGMA_QA_KPI_LONG_BRAND/PCT_PLAN_ACHIEVED]",
+            "name": "% Achieved"
+          }
+        ],
+        "name": "Performance detail — ecom only",
+        "order": [
+          "BRAND_LABEL",
+          "REPORT_DATE",
+          "METRIC_SORT",
+          "METRIC",
+          "YESTERDAY",
+          "SAME_DAY_LY",
+          "MTD",
+          "LY_MTD",
+          "TOTAL_MONTH_PLAN",
+          "TO_GO_VS_PLAN",
+          "PCT_PLAN_ACHIEVED"
+        ],
+        "visibleAsSource": false
+      },
+      {
+        "id": "txt_kpi_note",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #6A6A6A\">KPI additions in progress: Margin $/%, Media Spend, CAC/CPO, Traffic, CVR, Net $. These rows are present but blank on purpose.</span></p>"
+      },
+      {
+        "id": "txt_channel_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #1B3A4B\">Retail + total DTC — Favorite Daughter only</span></p>"
+      },
+      {
+        "id": "tbl_channel_dtc",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "warehouse-table",
+          "path": [
+            "SANDBOX",
+            "SBX_RRAJASEKAR",
+            "TB_SIGMA_CHANNEL_FD"
+          ]
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "[TB_SIGMA_CHANNEL_FD/BRAND_LABEL]",
+            "name": "Brand"
+          },
+          {
+            "id": "REPORT_DATE",
+            "formula": "[TB_SIGMA_CHANNEL_FD/REPORT_DATE]",
+            "name": "Report date"
+          },
+          {
+            "id": "CHANNEL_ORDER",
+            "formula": "Switch([TB_SIGMA_CHANNEL_FD/CHANNEL], \"Ecom (website)\", 1, \"Retail (POS / boutiques)\", 2, \"Total DTC\", 3, 99)",
+            "name": "Order"
+          },
+          {
+            "id": "CHANNEL",
+            "formula": "[TB_SIGMA_CHANNEL_FD/CHANNEL]",
+            "name": "Channel"
+          },
+          {
+            "id": "Y_DEMAND",
+            "formula": "[TB_SIGMA_CHANNEL_FD/Y_DEMAND]",
+            "name": "Yesterday demand"
+          },
+          {
+            "id": "Y_ORDERS",
+            "formula": "[TB_SIGMA_CHANNEL_FD/Y_ORDERS]",
+            "name": "Yday orders"
+          },
+          {
+            "id": "MTD_DEMAND",
+            "formula": "[TB_SIGMA_CHANNEL_FD/MTD_DEMAND]",
+            "name": "MTD demand"
+          }
+        ],
+        "name": "Retail + total DTC",
+        "order": [
+          "BRAND_LABEL",
+          "REPORT_DATE",
+          "CHANNEL_ORDER",
+          "CHANNEL",
+          "Y_DEMAND",
+          "Y_ORDERS",
+          "MTD_DEMAND"
+        ],
+        "visibleAsSource": false
+      },
+      {
+        "id": "txt_top_sold_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #1B3A4B\">Top 10 sold</span></p>"
+      },
+      {
+        "id": "tbl_top_sold",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "warehouse-table",
+          "path": [
+            "SANDBOX",
+            "SBX_RRAJASEKAR",
+            "TB_SIGMA_DAILY_TOP_STYLES"
+          ]
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/BRAND_LABEL]",
+            "name": "Brand"
+          },
+          {
+            "id": "REPORT_DATE",
+            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/REPORT_DATE]",
+            "name": "Report date"
+          },
+          {
+            "id": "RANK_IN_DAY",
+            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/RANK_IN_DAY]",
+            "name": "#"
+          },
+          {
+            "id": "STYLE_COLOR",
+            "formula": "Concat([TB_SIGMA_DAILY_TOP_STYLES/STYLE], \" — \", [TB_SIGMA_DAILY_TOP_STYLES/COLOR])",
+            "name": "Style / colour"
+          },
+          {
+            "id": "UNITS",
+            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/QTY]",
+            "name": "Units"
+          },
+          {
+            "id": "DEMAND_AMT",
+            "formula": "[TB_SIGMA_DAILY_TOP_STYLES/DEMAND_AMT]",
+            "name": "Demand $"
+          }
+        ],
+        "name": "Top 10 sold",
+        "order": [
+          "BRAND_LABEL",
+          "REPORT_DATE",
+          "RANK_IN_DAY",
+          "STYLE_COLOR",
+          "UNITS",
+          "DEMAND_AMT"
+        ],
+        "visibleAsSource": false
+      },
+      {
+        "id": "txt_top_returned_heading",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #1B3A4B\">Top 10 returned</span></p>"
+      },
+      {
+        "id": "tbl_top_returned",
+        "kind": "table",
+        "source": {
+          "connectionId": "82dc9446-e21c-4484-987d-79b52a490e2a",
+          "kind": "warehouse-table",
+          "path": [
+            "SANDBOX",
+            "SBX_RRAJASEKAR",
+            "TB_SIGMA_TOP_RETURNS"
+          ]
+        },
+        "columns": [
+          {
+            "id": "BRAND_LABEL",
+            "formula": "[TB_SIGMA_TOP_RETURNS/BRAND_LABEL]",
+            "name": "Brand"
+          },
+          {
+            "id": "REPORT_DATE",
+            "formula": "[TB_SIGMA_TOP_RETURNS/REPORT_DATE]",
+            "name": "Report date"
+          },
+          {
+            "id": "RANK_IN_DAY",
+            "formula": "[TB_SIGMA_TOP_RETURNS/RANK_IN_DAY]",
+            "name": "#"
+          },
+          {
+            "id": "STYLE_COLOR",
+            "formula": "Concat([TB_SIGMA_TOP_RETURNS/STYLE], \" — \", [TB_SIGMA_TOP_RETURNS/COLOR])",
+            "name": "Style / colour"
+          },
+          {
+            "id": "UNITS",
+            "formula": "[TB_SIGMA_TOP_RETURNS/QTY]",
+            "name": "Units"
+          }
+        ],
+        "name": "Top 10 returned",
+        "order": [
+          "BRAND_LABEL",
+          "REPORT_DATE",
+          "RANK_IN_DAY",
+          "STYLE_COLOR",
+          "UNITS"
+        ],
+        "visibleAsSource": false
+      },
+      {
+        "id": "txt_footer",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #8A8A8A\">Daily send (no weekend rollups). Promo copy from the Marketing Calendar. Top 10 returned is Shopify refunds only — not the Loop return rate, which is not yet in Snowflake.</span></p>"
+      },
+      {
+        "id": "txt_gaps",
+        "kind": "text",
+        "body": "<p class=\"p-large\"><span style=\"color: #8A8A8A\">Not reproduced from SQL: the Demand Plan grid row and the promo purchase totals. Both need an upstream view — see the README.</span></p>"
       }
-    },
-    {
-      "id": "ds_kpi_tiles",
-      "type": "sql",
-      "connectionId": "0a226657-a09f-4684-9465-820374fb6c30",
-      "sql": "-- Element: tbl_kpi_tiles  (the four coloured cards under \"Ecom KPIs (plan-tracked)\")\n--\n-- One row per tile so the four KPI elements can each bind to a single record:\n--   Yesterday vs plan | Yesterday vs LY | MTD vs plan | MTD vs LY\n--\n-- PCT_VALUE is the big number on the card. It is NULL wherever plan data is\n-- missing, which is what renders as \"—\" in the email.\n-- TREND drives the card colour: positive -> green, negative -> red, flat -> grey.\n\nWITH params AS (\n    SELECT :brand_label::TEXT AS brand_label,\n           :report_date::DATE AS report_date\n),\n\nglance AS (\n    SELECT g.*\n    FROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_GLANCE_BRAND g\n    JOIN params p\n      ON g.BRAND_LABEL = p.brand_label\n     AND g.REPORT_DATE = p.report_date\n),\n\ntiles AS (\n    SELECT 1 AS TILE_ORDER,\n           'Yesterday vs plan'   AS TILE_LABEL,\n           g.PCT_YEST_VS_PLAN    AS PCT_VALUE,\n           g.YESTERDAY_DEMAND    AS PRIMARY_AMT,\n           g.Y_DEMAND_PLAN       AS COMPARE_AMT\n    FROM glance g\n    UNION ALL\n    SELECT 2,\n           'Yesterday vs LY',\n           g.PCT_YEST_VS_LY,\n           g.YESTERDAY_DEMAND,\n           g.SAME_DAY_LY_DEMAND\n    FROM glance g\n    UNION ALL\n    SELECT 3,\n           'MTD vs plan',\n           g.PCT_MTD_VS_PLAN,\n           g.MTD_DEMAND,\n           g.TOTAL_MONTH_PLAN\n    FROM glance g\n    UNION ALL\n    SELECT 4,\n           'MTD vs LY',\n           g.PCT_MTD_VS_LY,\n           g.MTD_DEMAND,\n           g.LY_MTD_DEMAND\n    FROM glance g\n)\n\nSELECT TILE_ORDER,\n       TILE_LABEL,\n       PCT_VALUE,\n       PRIMARY_AMT,\n       COMPARE_AMT,\n       CASE\n           WHEN PCT_VALUE IS NULL THEN 'none'\n           WHEN PCT_VALUE > 0     THEN 'up'\n           WHEN PCT_VALUE < 0     THEN 'down'\n           ELSE 'flat'\n       END AS TREND\nFROM tiles\nORDER BY TILE_ORDER\n",
-      "parameters": {
-        "brand_label": {
-          "control": "ctl_brand"
-        },
-        "report_date": {
-          "control": "ctl_report_date"
-        }
+    ],
+    "pages": [
+      {
+        "id": "page_mail",
+        "name": "Daily Ecom Mail",
+        "pageWidth": "full"
       }
-    },
-    {
-      "id": "ds_promo",
-      "type": "sql",
-      "connectionId": "0a226657-a09f-4684-9465-820374fb6c30",
-      "sql": "-- Element: txt_promo  (\"Promo & email\" block)\n--\n-- Two independent facts sit in this block:\n--   1. PROMO_TEXT / EMAIL_TEXT — what marketing had scheduled for the day,\n--      read off the Marketing Calendar load. Absent on most days, which is the\n--      \"— (none on Marketing Calendar for this day)\" line in the email.\n--   2. PROMO_DISCOUNT_AMT / PROMO_ORDERS — what customers actually redeemed,\n--      i.e. Shopify TOTALDISCOUNT on in-scope orders.\n--\n-- The discount figure is taken by joining the in-scope order list back to raw\n-- Shopify rather than aggregating Shopify directly, so it inherits exactly the\n-- same scope filter as the demand numbers above it and cannot drift from them.\n-- SHOPIFY_ORDERS_ADF keeps a row per pipeline load, so it is de-duplicated to\n-- the latest row per order id first.\n\nWITH params AS (\n    SELECT :brand_label::TEXT AS brand_label,\n           :report_date::DATE AS report_date\n),\n\nbrand AS (\n    SELECT DISTINCT g.BRAND_LABEL, g.BRAND_ID\n    FROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_GLANCE_BRAND g\n    JOIN params p ON g.BRAND_LABEL = p.brand_label\n),\n\n-- Latest Shopify row per order id.\nshopify_latest AS (\n    SELECT s.ID,\n           s.TOTALDISCOUNT,\n           ROW_NUMBER() OVER (PARTITION BY s.ID ORDER BY s.CREATEDAT DESC) AS rn\n    FROM SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF s\n),\n\nredeemed AS (\n    SELECT SUM(COALESCE(sl.TOTALDISCOUNT, 0))                        AS PROMO_DISCOUNT_AMT,\n           COUNT_IF(COALESCE(sl.TOTALDISCOUNT, 0) > 0)               AS PROMO_ORDERS\n    FROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_ORDERS_QA o\n    JOIN params p\n      ON o.BRAND_LABEL = p.brand_label\n     AND o.REPORT_DATE = p.report_date\n    LEFT JOIN shopify_latest sl\n      ON sl.ID = o.ORDER_ID\n     AND sl.rn = 1\n),\n\nscheduled AS (\n    SELECT pr.PROMO_TEXT, pr.EMAIL_TEXT\n    FROM SANDBOX.SBX_RRAJASEKAR.ECOM_DAILY_PROMO pr\n    JOIN brand b  ON pr.BRAND_ID  = b.BRAND_ID\n    JOIN params p ON pr.PROMO_DATE = p.report_date\n)\n\nSELECT NULLIF(TRIM(COALESCE(s.PROMO_TEXT, '')), '') AS PROMO_TEXT,\n       NULLIF(TRIM(COALESCE(s.EMAIL_TEXT, '')), '') AS EMAIL_TEXT,\n       COALESCE(r.PROMO_DISCOUNT_AMT, 0)            AS PROMO_DISCOUNT_AMT,\n       COALESCE(r.PROMO_ORDERS, 0)                  AS PROMO_ORDERS\nFROM redeemed r\nLEFT JOIN scheduled s ON TRUE\n",
-      "parameters": {
-        "brand_label": {
-          "control": "ctl_brand"
-        },
-        "report_date": {
-          "control": "ctl_report_date"
-        }
-      }
-    },
-    {
-      "id": "ds_performance_grid",
-      "type": "sql",
-      "connectionId": "0a226657-a09f-4684-9465-820374fb6c30",
-      "sql": "-- Element: tbl_performance  (\"Performance detail — ecom only\")\n-- Reproduces the main metric grid in the daily ecom recap email.\n--\n-- Rows, in email order: Demand Sales, Demand Plan, Orders, Units, UPT, AOV, AUR.\n-- Columns:              Yesterday | Same Day LY | MTD | LY MTD | Month Plan | To-Go $ | % Achieved\n--\n-- :brand_label and :report_date are bound from the workbook controls\n-- (ctl_brand / ctl_report_date). Blank plan cells render as the \"—\" seen in the email.\n\nWITH params AS (\n    SELECT :brand_label::TEXT AS brand_label,\n           :report_date::DATE AS report_date\n),\n\n-- Plan figures live on the glance table, one row per brand + day.\nglance AS (\n    SELECT g.Y_DEMAND_PLAN,\n           g.TOTAL_MONTH_PLAN,\n           g.TO_GO_VS_PLAN,\n           g.PCT_PLAN_ACHIEVED\n    FROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_GLANCE_BRAND g\n    JOIN params p\n      ON g.BRAND_LABEL = p.brand_label\n     AND g.REPORT_DATE = p.report_date\n),\n\n-- The plan-tracked KPIs already modelled long-form.\nkpis AS (\n    SELECT k.METRIC,\n           CASE k.METRIC\n                WHEN 'Demand Sales' THEN 1\n                WHEN 'Orders'       THEN 3\n                WHEN 'Units'        THEN 4\n                WHEN 'UPT'          THEN 5\n                WHEN 'AOV'          THEN 6\n                WHEN 'AUR'          THEN 7\n           END AS sort_order,\n           k.YESTERDAY,\n           k.SAME_DAY_LY,\n           k.MTD,\n           k.LY_MTD,\n           k.TOTAL_MONTH_PLAN,\n           k.TO_GO_VS_PLAN,\n           k.PCT_PLAN_ACHIEVED\n    FROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_QA_KPI_LONG_BRAND k\n    JOIN params p\n      ON k.BRAND_LABEL = p.brand_label\n     AND k.REPORT_DATE = p.report_date\n    WHERE k.METRIC IN ('Demand Sales', 'Orders', 'Units', 'UPT', 'AOV', 'AUR')\n),\n\n-- The email carries a Demand Plan row that has no counterpart in the long KPI\n-- table; it is assembled from the glance plan columns instead.\ndemand_plan AS (\n    SELECT 'Demand Plan'      AS METRIC,\n           2                  AS sort_order,\n           g.Y_DEMAND_PLAN    AS YESTERDAY,\n           NULL               AS SAME_DAY_LY,\n           NULL               AS MTD,\n           NULL               AS LY_MTD,\n           g.TOTAL_MONTH_PLAN AS TOTAL_MONTH_PLAN,\n           g.TO_GO_VS_PLAN    AS TO_GO_VS_PLAN,\n           g.PCT_PLAN_ACHIEVED AS PCT_PLAN_ACHIEVED\n    FROM glance g\n)\n\nSELECT METRIC,\n       YESTERDAY,\n       SAME_DAY_LY,\n       MTD,\n       LY_MTD,\n       TOTAL_MONTH_PLAN,\n       TO_GO_VS_PLAN,\n       PCT_PLAN_ACHIEVED\nFROM (\n    SELECT * FROM kpis\n    UNION ALL\n    SELECT * FROM demand_plan\n)\nORDER BY sort_order\n",
-      "parameters": {
-        "brand_label": {
-          "control": "ctl_brand"
-        },
-        "report_date": {
-          "control": "ctl_report_date"
-        }
-      }
-    },
-    {
-      "id": "ds_channel_dtc",
-      "type": "sql",
-      "connectionId": "0a226657-a09f-4684-9465-820374fb6c30",
-      "sql": "-- Element: tbl_channel_dtc  (\"Retail + total DTC\")\n--\n-- Favorite Daughter only — it is the one brand whose boutiques run on Shopify,\n-- so TB_SIGMA_CHANNEL_FD holds rows for it alone. Hudson and Joe's return no\n-- rows here and the element is hidden for them (Joe's shows the standing\n-- \"retail is on a separate platform\" note instead).\n--\n-- Retail = Shopify orders tied to a physical location\n-- (Madison Ave / Nashville / Beverly Hills).\n\nWITH params AS (\n    SELECT :brand_label::TEXT AS brand_label,\n           :report_date::DATE AS report_date\n)\n\nSELECT c.CHANNEL,\n       CASE c.CHANNEL\n            WHEN 'Ecom (website)'            THEN 1\n            WHEN 'Retail (POS / boutiques)'  THEN 2\n            WHEN 'Total DTC'                 THEN 3\n            ELSE 99\n       END AS CHANNEL_ORDER,\n       c.Y_DEMAND,\n       c.Y_ORDERS,\n       c.MTD_DEMAND\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_CHANNEL_FD c\nJOIN params p\n  ON c.BRAND_LABEL = p.brand_label\n AND c.REPORT_DATE = p.report_date\nORDER BY CHANNEL_ORDER\n",
-      "parameters": {
-        "brand_label": {
-          "control": "ctl_brand"
-        },
-        "report_date": {
-          "control": "ctl_report_date"
-        }
-      }
-    },
-    {
-      "id": "ds_top_sold",
-      "type": "sql",
-      "connectionId": "0a226657-a09f-4684-9465-820374fb6c30",
-      "sql": "-- Element: tbl_top_sold  (\"Top 10 sold\" — style / colour / units / demand $)\n--\n-- TB_SIGMA_DAILY_TOP_STYLES is already ranked per brand per day, so this only\n-- trims to the top 10 and builds the \"STYLE — COLOUR\" label the email prints.\n\nWITH params AS (\n    SELECT :brand_label::TEXT AS brand_label,\n           :report_date::DATE AS report_date\n)\n\nSELECT t.RANK_IN_DAY,\n       t.STYLE,\n       t.COLOR,\n       t.STYLE || ' — ' || t.COLOR AS STYLE_COLOR,\n       t.QTY                       AS UNITS,\n       t.DEMAND_AMT\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_DAILY_TOP_STYLES t\nJOIN params p\n  ON t.BRAND_LABEL = p.brand_label\n AND t.DT_PT       = p.report_date\nWHERE t.RANK_IN_DAY <= 10\nORDER BY t.RANK_IN_DAY\n",
-      "parameters": {
-        "brand_label": {
-          "control": "ctl_brand"
-        },
-        "report_date": {
-          "control": "ctl_report_date"
-        }
-      }
-    },
-    {
-      "id": "ds_top_returned",
-      "type": "sql",
-      "connectionId": "0a226657-a09f-4684-9465-820374fb6c30",
-      "sql": "-- Element: tbl_top_returned  (\"Top 10 returned\")\n--\n-- Shopify refunds only — this is not the Loop return rate, which is not yet in\n-- Snowflake (see TB_SIGMA_DATA_GAPS). On days with no refunds this returns no\n-- rows and the workbook element shows its \"No rows for this day.\" empty state.\n\nWITH params AS (\n    SELECT :brand_label::TEXT AS brand_label,\n           :report_date::DATE AS report_date\n)\n\nSELECT r.RANK_IN_DAY,\n       r.STYLE,\n       r.COLOR,\n       r.STYLE || ' — ' || r.COLOR AS STYLE_COLOR,\n       r.QTY                       AS UNITS\nFROM SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_TOP_RETURNS r\nJOIN params p\n  ON r.BRAND_LABEL = p.brand_label\n AND r.DT_PT       = p.report_date\nWHERE r.RANK_IN_DAY <= 10\nORDER BY r.RANK_IN_DAY\n",
-      "parameters": {
-        "brand_label": {
-          "control": "ctl_brand"
-        },
-        "report_date": {
-          "control": "ctl_report_date"
-        }
-      }
-    }
-  ],
-  "pages": [
-    {
-      "id": "page_mail",
-      "name": "Daily Ecom Mail",
-      "elements": [
-        {
-          "id": "txt_header",
-          "type": "text",
-          "dataSource": "ds_header",
-          "layout": {
-            "x": 0,
-            "y": 0,
-            "width": 12,
-            "height": 4
-          },
-          "style": {
-            "background": "#1B3A4B",
-            "color": "#FFFFFF"
-          },
-          "content": [
-            {
-              "text": "{{BRAND_DISPLAY_NAME}}",
-              "size": 28,
-              "bold": true
-            },
-            {
-              "text": "DAILY ECOM RECAP",
-              "size": 11,
-              "letterSpacing": 1.4
-            },
-            {
-              "text": "{{SCOPE_LINE}}",
-              "size": 13
-            },
-            {
-              "text": "Today = {{TODAY_LABEL}} · Same Day LY = {{SAME_DAY_LY_LABEL}} (same weekday)",
-              "size": 13
-            },
-            {
-              "text": "Yesterday's ecom demand was {{YESTERDAY_DEMAND:currency_kmb}} vs plan {{Y_DEMAND_PLAN:currency_kmb}} ({{PCT_YEST_VS_PLAN:percent}}) and {{PCT_YEST_VS_LY:percent}} to same-day LY. MTD ecom demand is {{MTD_DEMAND:currency_kmb}} vs month plan {{TOTAL_MONTH_PLAN:currency_kmb}} ({{PCT_MTD_VS_PLAN:percent}} to MTD plan, {{PCT_MTD_VS_LY:percent}} to LY MTD).",
-              "size": 14,
-              "callout": true
-            }
-          ]
-        },
-        {
-          "id": "txt_kpi_heading",
-          "type": "text",
-          "layout": {
-            "x": 0,
-            "y": 4,
-            "width": 12,
-            "height": 1
-          },
-          "content": [
-            {
-              "text": "ECOM KPIs (PLAN-TRACKED)",
-              "size": 12,
-              "color": "#6A6A6A"
-            }
-          ]
-        },
-        {
-          "id": "kpi_yest_vs_plan",
-          "type": "kpi",
-          "dataSource": "ds_kpi_tiles",
-          "filter": {
-            "column": "TILE_ORDER",
-            "equals": 1
-          },
-          "layout": {
-            "x": 0,
-            "y": 5,
-            "width": 3,
-            "height": 2
-          },
-          "label": "Yesterday vs plan",
-          "valueColumn": "PCT_VALUE",
-          "format": "percent",
-          "nullDisplay": "—",
-          "subtitleColumns": [
-            "PRIMARY_AMT",
-            "COMPARE_AMT"
-          ],
-          "conditionalFormatting": [
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "up"
-              },
-              "background": "#E7F6EC",
-              "color": "#0B7A3B"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "down"
-              },
-              "background": "#FDECEA",
-              "color": "#C62828"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "none"
-              },
-              "background": "#F4F4F4",
-              "color": "#555555"
-            }
-          ]
-        },
-        {
-          "id": "kpi_yest_vs_ly",
-          "type": "kpi",
-          "dataSource": "ds_kpi_tiles",
-          "filter": {
-            "column": "TILE_ORDER",
-            "equals": 2
-          },
-          "layout": {
-            "x": 3,
-            "y": 5,
-            "width": 3,
-            "height": 2
-          },
-          "label": "Yesterday vs LY",
-          "valueColumn": "PCT_VALUE",
-          "format": "percent",
-          "nullDisplay": "—",
-          "subtitleColumns": [
-            "PRIMARY_AMT",
-            "COMPARE_AMT"
-          ],
-          "conditionalFormatting": [
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "up"
-              },
-              "background": "#E7F6EC",
-              "color": "#0B7A3B"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "down"
-              },
-              "background": "#FDECEA",
-              "color": "#C62828"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "none"
-              },
-              "background": "#F4F4F4",
-              "color": "#555555"
-            }
-          ]
-        },
-        {
-          "id": "kpi_mtd_vs_plan",
-          "type": "kpi",
-          "dataSource": "ds_kpi_tiles",
-          "filter": {
-            "column": "TILE_ORDER",
-            "equals": 3
-          },
-          "layout": {
-            "x": 6,
-            "y": 5,
-            "width": 3,
-            "height": 2
-          },
-          "label": "MTD vs plan",
-          "valueColumn": "PCT_VALUE",
-          "format": "percent",
-          "nullDisplay": "—",
-          "subtitleColumns": [
-            "PRIMARY_AMT",
-            "COMPARE_AMT"
-          ],
-          "conditionalFormatting": [
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "up"
-              },
-              "background": "#E7F6EC",
-              "color": "#0B7A3B"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "down"
-              },
-              "background": "#FDECEA",
-              "color": "#C62828"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "none"
-              },
-              "background": "#F4F4F4",
-              "color": "#555555"
-            }
-          ]
-        },
-        {
-          "id": "kpi_mtd_vs_ly",
-          "type": "kpi",
-          "dataSource": "ds_kpi_tiles",
-          "filter": {
-            "column": "TILE_ORDER",
-            "equals": 4
-          },
-          "layout": {
-            "x": 9,
-            "y": 5,
-            "width": 3,
-            "height": 2
-          },
-          "label": "MTD vs LY",
-          "valueColumn": "PCT_VALUE",
-          "format": "percent",
-          "nullDisplay": "—",
-          "subtitleColumns": [
-            "PRIMARY_AMT",
-            "COMPARE_AMT"
-          ],
-          "conditionalFormatting": [
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "up"
-              },
-              "background": "#E7F6EC",
-              "color": "#0B7A3B"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "down"
-              },
-              "background": "#FDECEA",
-              "color": "#C62828"
-            },
-            {
-              "when": {
-                "column": "TREND",
-                "equals": "none"
-              },
-              "background": "#F4F4F4",
-              "color": "#555555"
-            }
-          ]
-        },
-        {
-          "id": "txt_promo",
-          "type": "text",
-          "dataSource": "ds_promo",
-          "layout": {
-            "x": 0,
-            "y": 7,
-            "width": 12,
-            "height": 2
-          },
-          "style": {
-            "borderLeft": "#1B3A4B",
-            "background": "#FAFAFA"
-          },
-          "content": [
-            {
-              "text": "PROMO & EMAIL",
-              "size": 12,
-              "color": "#6A6A6A"
-            },
-            {
-              "text": "Promo: {{PROMO_TEXT|— (none on Marketing Calendar for this day)}}",
-              "size": 13
-            },
-            {
-              "text": "Email: {{EMAIL_TEXT|—}}",
-              "size": 13
-            },
-            {
-              "text": "Promo purchase (discounts applied): {{PROMO_DISCOUNT_AMT:currency_kmb}} across {{PROMO_ORDERS}} orders (Shopify TOTALDISCOUNT)",
-              "size": 13
-            }
-          ]
-        },
-        {
-          "id": "tbl_performance",
-          "type": "table",
-          "dataSource": "ds_performance_grid",
-          "layout": {
-            "x": 0,
-            "y": 9,
-            "width": 12,
-            "height": 5
-          },
-          "title": "Performance detail — ecom only",
-          "headerStyle": {
-            "background": "#1B3A4B",
-            "color": "#FFFFFF"
-          },
-          "nullDisplay": "—",
-          "columns": [
-            {
-              "column": "METRIC",
-              "label": "Metric",
-              "align": "left",
-              "bold": true
-            },
-            {
-              "column": "YESTERDAY",
-              "label": "Yesterday",
-              "align": "right"
-            },
-            {
-              "column": "SAME_DAY_LY",
-              "label": "Same Day LY",
-              "align": "right"
-            },
-            {
-              "column": "MTD",
-              "label": "MTD",
-              "align": "right"
-            },
-            {
-              "column": "LY_MTD",
-              "label": "LY MTD",
-              "align": "right"
-            },
-            {
-              "column": "TOTAL_MONTH_PLAN",
-              "label": "Month Plan",
-              "align": "right"
-            },
-            {
-              "column": "TO_GO_VS_PLAN",
-              "label": "To-Go $",
-              "align": "right"
-            },
-            {
-              "column": "PCT_PLAN_ACHIEVED",
-              "label": "% Achieved",
-              "align": "right",
-              "format": "percent"
-            }
-          ]
-        },
-        {
-          "id": "txt_kpi_note",
-          "type": "text",
-          "layout": {
-            "x": 0,
-            "y": 14,
-            "width": 12,
-            "height": 1
-          },
-          "content": [
-            {
-              "text": "KPI additions in progress: Margin $/%, Media Spend, CAC/CPO, Traffic, CVR, Net $.",
-              "size": 12,
-              "color": "#888888"
-            }
-          ]
-        },
-        {
-          "id": "tbl_channel_dtc",
-          "type": "table",
-          "dataSource": "ds_channel_dtc",
-          "layout": {
-            "x": 0,
-            "y": 15,
-            "width": 12,
-            "height": 3
-          },
-          "title": "Retail + total DTC",
-          "headerStyle": {
-            "background": "#1B3A4B",
-            "color": "#FFFFFF"
-          },
-          "hideWhenEmpty": true,
-          "columns": [
-            {
-              "column": "CHANNEL",
-              "label": "Channel",
-              "align": "left",
-              "bold": true
-            },
-            {
-              "column": "Y_DEMAND",
-              "label": "Yesterday demand",
-              "align": "right",
-              "format": "currency"
-            },
-            {
-              "column": "Y_ORDERS",
-              "label": "Yday orders",
-              "align": "right"
-            },
-            {
-              "column": "MTD_DEMAND",
-              "label": "MTD demand",
-              "align": "right",
-              "format": "currency"
-            }
-          ]
-        },
-        {
-          "id": "tbl_top_sold",
-          "type": "table",
-          "dataSource": "ds_top_sold",
-          "layout": {
-            "x": 0,
-            "y": 18,
-            "width": 6,
-            "height": 6
-          },
-          "title": "Top 10 sold",
-          "headerStyle": {
-            "background": "#1B3A4B",
-            "color": "#FFFFFF"
-          },
-          "columns": [
-            {
-              "column": "RANK_IN_DAY",
-              "label": "#",
-              "align": "left",
-              "width": 40
-            },
-            {
-              "column": "STYLE_COLOR",
-              "label": "Style / colour",
-              "align": "left"
-            },
-            {
-              "column": "UNITS",
-              "label": "Units",
-              "align": "right"
-            },
-            {
-              "column": "DEMAND_AMT",
-              "label": "Demand $",
-              "align": "right",
-              "format": "currency"
-            }
-          ]
-        },
-        {
-          "id": "tbl_top_returned",
-          "type": "table",
-          "dataSource": "ds_top_returned",
-          "layout": {
-            "x": 6,
-            "y": 18,
-            "width": 6,
-            "height": 6
-          },
-          "title": "Top 10 returned",
-          "headerStyle": {
-            "background": "#1B3A4B",
-            "color": "#FFFFFF"
-          },
-          "emptyMessage": "No rows for this day.",
-          "columns": [
-            {
-              "column": "RANK_IN_DAY",
-              "label": "#",
-              "align": "left",
-              "width": 40
-            },
-            {
-              "column": "STYLE_COLOR",
-              "label": "Style / colour",
-              "align": "left"
-            },
-            {
-              "column": "UNITS",
-              "label": "Units",
-              "align": "right"
-            }
-          ]
-        },
-        {
-          "id": "txt_footer",
-          "type": "text",
-          "layout": {
-            "x": 0,
-            "y": 24,
-            "width": 12,
-            "height": 2
-          },
-          "content": [
-            {
-              "text": "Daily send (no weekend rollups). LY = same weekday (−364). Promo from Marketing Calendar; promo purchase $ = Shopify TOTALDISCOUNT. Top 10 returned is Shopify refunds only — not the Loop return rate, which is not yet in Snowflake.",
-              "size": 12,
-              "color": "#8A8A8A"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ],
+    "layout": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Page type=\"grid\" gridTemplateColumns=\"repeat(24, 1fr)\" gridTemplateRows=\"auto\" id=\"page_mail\">\n  <Element elementId=\"txt_title\" gridColumn=\"1 / 25\" gridRow=\"1 / 2\"/>\n  <Element elementId=\"txt_sub\" gridColumn=\"1 / 25\" gridRow=\"2 / 4\"/>\n  <Element elementId=\"ctrl_brand\" gridColumn=\"1 / 7\" gridRow=\"4 / 5\"/>\n  <Element elementId=\"ctrl_dates\" gridColumn=\"7 / 16\" gridRow=\"4 / 5\"/>\n  <Element elementId=\"txt_kpi_heading\" gridColumn=\"1 / 25\" gridRow=\"5 / 6\"/>\n  <Element elementId=\"tbl_glance\" gridColumn=\"1 / 25\" gridRow=\"6 / 18\"/>\n  <Element elementId=\"txt_promo_heading\" gridColumn=\"1 / 25\" gridRow=\"18 / 19\"/>\n  <Element elementId=\"tbl_promo\" gridColumn=\"1 / 25\" gridRow=\"19 / 27\"/>\n  <Element elementId=\"txt_perf_heading\" gridColumn=\"1 / 25\" gridRow=\"27 / 28\"/>\n  <Element elementId=\"tbl_performance\" gridColumn=\"1 / 25\" gridRow=\"28 / 44\"/>\n  <Element elementId=\"txt_kpi_note\" gridColumn=\"1 / 25\" gridRow=\"44 / 45\"/>\n  <Element elementId=\"txt_channel_heading\" gridColumn=\"1 / 25\" gridRow=\"45 / 46\"/>\n  <Element elementId=\"tbl_channel_dtc\" gridColumn=\"1 / 25\" gridRow=\"46 / 54\"/>\n  <Element elementId=\"txt_top_sold_heading\" gridColumn=\"1 / 25\" gridRow=\"54 / 55\"/>\n  <Element elementId=\"tbl_top_sold\" gridColumn=\"1 / 25\" gridRow=\"55 / 69\"/>\n  <Element elementId=\"txt_top_returned_heading\" gridColumn=\"1 / 25\" gridRow=\"69 / 70\"/>\n  <Element elementId=\"tbl_top_returned\" gridColumn=\"1 / 25\" gridRow=\"70 / 84\"/>\n  <Element elementId=\"txt_footer\" gridColumn=\"1 / 25\" gridRow=\"84 / 86\"/>\n  <Element elementId=\"txt_gaps\" gridColumn=\"1 / 25\" gridRow=\"86 / 87\"/>\n</Page>\n"
+  }
 }

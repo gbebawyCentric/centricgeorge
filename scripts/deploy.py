@@ -38,12 +38,27 @@ def main() -> None:
         default=os.environ.get("SIGMA_WORKSPACE_ID"),
         help="workspace to create the workbook in (defaults to $SIGMA_WORKSPACE_ID)",
     )
+    parser.add_argument(
+        "--folder-id",
+        default=os.environ.get("SIGMA_FOLDER_ID"),
+        help=(
+            "folder to create the workbook in (defaults to $SIGMA_FOLDER_ID). "
+            "Use this for a personal folder, which has no workspace id. "
+            "Takes precedence over --workspace-id."
+        ),
+    )
     args = parser.parse_args()
 
     spec = build_spec()
-    element_count = sum(len(page["elements"]) for page in spec["pages"])
+    elements = spec["document"]["elements"]
+    tables = [e for e in elements if e.get("kind") == "table"]
     print(f'built spec for "{spec["name"]}"')
-    print(f"  {len(spec['dataSources'])} data sources, {element_count} elements")
+    print(
+        f"  {len(elements)} elements, {len(tables)} tables, "
+        f"{sum(len(t['columns']) for t in tables)} column formulas"
+    )
+    if args.folder_id:
+        print(f"  target folder: {args.folder_id}")
 
     if args.dry_run:
         print("\ndry run — nothing sent to Sigma.")
@@ -62,7 +77,9 @@ def main() -> None:
             result = client.update_workbook_from_spec(workbook_id, spec)
         else:
             print("\ncreating new workbook ...")
-            result = client.create_workbook_from_spec(spec, args.workspace_id)
+            result = client.create_workbook_from_spec(
+                spec, args.workspace_id, args.folder_id
+            )
             workbook_id = result.get("workbookId", "?")
 
         print(f"done. workbook id: {workbook_id}")

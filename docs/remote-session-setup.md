@@ -43,6 +43,7 @@ covered by rotation.
 | `SIGMA_CLIENT_SECRET` | Client secret |
 | `SIGMA_API_BASE_URL` | API host, matching the allowlisted one above |
 | `SIGMA_WORKSPACE_ID` | Optional — workspace new workbooks are created in |
+| `SIGMA_FOLDER_ID` | Optional — folder new workbooks are created in; use for a personal folder, which has no workspace id. Wins over `SIGMA_WORKSPACE_ID` |
 
 The scripts read only from the environment, so with these set a session can run
 `python3 scripts/deploy.py` directly and no `.env` file is involved. The local

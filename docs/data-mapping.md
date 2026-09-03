@@ -16,19 +16,31 @@ SQL in `sql/` was run against Snowflake and returns the values shown here.
 | `SANDBOX.SBX_RRAJASEKAR.ECOM_DAILY_PROMO` | brand + day | Scheduled promo / email copy |
 | `SHOPIFY_APP.DEV_BRONZE.SHOPIFY_ORDERS_ADF` | order id, one row per load | `TOTALDISCOUNT` for promo purchase |
 
-Connection: `CENTRIC_SNOWPATH_PRD` (`0a226657-a09f-4684-9465-820374fb6c30`).
+Connection: **Centric Brands POC** (`82dc9446-e21c-4484-987d-79b52a490e2a`).
+This is the connection the existing Ecom KPI QA workbook uses to read these same
+`SANDBOX.SBX_RRAJASEKAR` tables, so it is known to resolve them.
+`CENTRIC_SNOWPATH_PRD` (`0a226657-a09f-4684-9465-820374fb6c30`) also exists and
+is what earlier drafts named, but it is not demonstrated against these tables.
 
 ## Block by block
 
-| Email block | Element | SQL |
+Each element reads its table directly; the SQL is the reference copy of the
+logic, ported to column formulas in `scripts/build_spec.py`.
+
+| Email block | Element | Ported from |
 |---|---|---|
-| Brand banner + narrative paragraph | `txt_header` | `sql/el_header.sql` |
-| Four cards under "Ecom KPIs (plan-tracked)" | `kpi_yest_vs_plan`, `kpi_yest_vs_ly`, `kpi_mtd_vs_plan`, `kpi_mtd_vs_ly` | `sql/el_kpi_tiles.sql` |
-| "Promo & email" | `txt_promo` | `sql/el_promo.sql` |
+| Title + scope prose | `txt_title`, `txt_sub` | `sql/el_header.sql` (prose only — see below) |
+| "Ecom KPIs (plan-tracked)" | `tbl_glance` | `sql/el_header.sql`, `sql/el_kpi_tiles.sql` |
+| "Promo & email" | `tbl_promo` | `sql/el_promo.sql` (copy only) |
 | "Performance detail — ecom only" | `tbl_performance` | `sql/el_performance_grid.sql` |
 | "Retail + total DTC" | `tbl_channel_dtc` | `sql/el_channel_dtc.sql` |
 | "Top 10 sold" | `tbl_top_sold` | `sql/el_top_sold.sql` |
 | "Top 10 returned" | `tbl_top_returned` | `sql/el_top_returned.sql` |
+
+The four KPI tiles were one row per tile, produced by a `UNION ALL` over a
+single glance row. A column formula cannot generate rows — but it does not need
+to here, because the four values are already four columns of that row. Each tile
+reads its own column plus its own ported `TREND_*` formula.
 
 Brands are `Hudson`, `FD`, `Joe's` (brand ids `hudson-jeans`, `favorite-daughter`,
 `joes-jeans`).
@@ -37,9 +49,28 @@ Brands are `Hudson`, `FD`, `Joe's` (brand ids `hudson-jeans`, `favorite-daughter
 
 **Demand Plan row.** The email's performance grid has a Demand Plan row, but
 `TB_SIGMA_QA_KPI_LONG_BRAND` has no such metric — it carries Demand Sales,
-Orders, Units, UPT, AOV, AUR and a set of not-yet-populated ones. The row is
-assembled from the glance table's plan columns and unioned in at sort position
-2, so the grid reads in the same order as the email.
+Orders, Units, UPT, AOV, AUR and a set of not-yet-populated ones.
+`sql/el_performance_grid.sql` assembles it from the glance table's plan columns
+and unions it in at sort position 2. **The workbook does not carry this row**: a
+column formula adds a column, never a row. Its figures are on `tbl_glance`
+instead (Yesterday plan $, Month plan $, To-go $, % plan achieved). Adding a
+`Demand Plan` row to `TB_SIGMA_QA_KPI_LONG_BRAND` upstream would make it an
+ordinary grid row.
+
+**Metric ordering.** `TB_SIGMA_QA_KPI_LONG_BRAND` already carries `METRIC_SORT`
+(Demand Sales 1, Orders 2, Units 3, UPT 4, AOV 5, AUR 6), so the hand-rolled
+sort `CASE` in `sql/el_performance_grid.sql` is not ported — the native column
+gives the same order. The SQL's numbering differs only because it leaves a slot
+for the Demand Plan row above.
+
+**Report date column.** `TB_SIGMA_DAILY_TOP_STYLES` and `TB_SIGMA_TOP_RETURNS`
+carry both `DT_PT` and `REPORT_DATE`. The SQL joins on `DT_PT`; the two are
+equal on every row (checked across all 870 and 145 rows), so the workbook uses
+`REPORT_DATE` throughout and one date control binds to every element uniformly.
+
+**Promo brand key.** `ECOM_DAILY_PROMO` is keyed by `BRAND_ID` while every other
+table is keyed by `BRAND_LABEL`. `tbl_promo` derives a `BRAND_LABEL` column with
+a `Switch` on brand id so the one Brand control filters it too.
 
 **Promo discounts.** Taken by joining `TB_SIGMA_ORDERS_QA` (the in-scope order
 list) back to raw Shopify on `ORDER_ID = SHOPIFY_ORDERS_ADF.ID`, rather than
@@ -50,10 +81,21 @@ matching on the numeric column returns zero rows. Shopify keeps one row per
 pipeline load, so it is de-duplicated to the latest row per order id first.
 Verified at 100% match for all three brands on 2026-08-27.
 
+**The workbook does not carry the promo purchase figures.** That de-duplication
+is a `ROW_NUMBER()` window over raw Shopify, followed by a cross-table join and
+an aggregation — none of which is a column formula, and `TB_SIGMA_ORDERS_QA`
+has no `TOTALDISCOUNT` to aggregate element-side. `tbl_promo` carries the
+scheduled promo/email copy only. A `TB_SIGMA_PROMO_DAILY` view materialising
+`PROMO_DISCOUNT_AMT` and `PROMO_ORDERS` per brand per day — which is exactly
+what `sql/el_promo.sql` computes — would make them ordinary columns.
+
 **Date labels.** `TO_CHAR` has no format token for an unpadded month/day, and
 `'DAY'` yields a blank-padded uppercase name, so "Tuesday, 9/1/26" is built
 from `DAYNAME` + `MONTH`/`DAY`/`YEAR`. `DAYNAME` is mapped explicitly so the
-output does not depend on the session's `WEEK_START`.
+output does not depend on the session's `WEEK_START`. These labels existed only
+to be interpolated into the banner prose, which the schema does not support (see
+below), so they are not ported; `tbl_glance` carries `SAME_DAY_LY_DATE` as a
+real date via `DateAdd("day", -364, …)` and Sigma formats it.
 
 **LY** is the same weekday last year, i.e. −364 days, per the email footer.
 
@@ -80,9 +122,15 @@ as "KPI additions in progress":
 
 ## Differences from the attached emails
 
-Two things the Sigma-native build does not reproduce, both inherent to
-rendering from workbook elements rather than hand-built HTML:
+Things the Sigma-native build does not reproduce, inherent to rendering from
+workbook elements rather than hand-built HTML:
 
+0. **The narrative banner paragraph.** A text element in this schema is static
+   HTML with no data binding — every text element in the reference workbook is
+   fixed prose. The email's opening sentence interpolates eight figures, which a
+   static body cannot do. They are all columns on `tbl_glance`; the prose around
+   them is static. (An earlier draft of `build_spec.py` assumed a `{{COLUMN}}`
+   placeholder syntax in text bodies. No such thing exists in the real schema.)
 1. **Product thumbnails.** The attachments show a 56px Shopify image beside each
    top-10 row. `TB_SIGMA_DAILY_TOP_STYLES` carries no image URL; the URLs come
    from `SHOPIFY_PRODUCT_ADF.featuredImageUrl`. Adding them means extending that

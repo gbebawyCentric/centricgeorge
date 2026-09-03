@@ -135,14 +135,27 @@ class SigmaClient:
         """Code representation of an existing workbook."""
         return self.request("GET", f"/v2/workbooks/{workbook_id}/spec")
 
-    def create_workbook_from_spec(self, spec: dict, workspace_id: str | None = None) -> dict:
-        body: dict = {"spec": spec}
-        if workspace_id:
+    def create_workbook_from_spec(
+        self,
+        spec: dict,
+        workspace_id: str | None = None,
+        folder_id: str | None = None,
+    ) -> dict:
+        # The spec is the request body itself — it is not wrapped in a "spec"
+        # key. Wrapping it fails validation with "Expecting string at 0.name".
+        body: dict = dict(spec)
+        # folderId places the workbook in a specific folder — including a
+        # personal folder, which has no workspace id. Send only one of the two.
+        if folder_id:
+            body["folderId"] = folder_id
+        elif workspace_id:
             body["workspaceId"] = workspace_id
         return self.request("POST", "/v2/workbooks/spec", body)
 
     def update_workbook_from_spec(self, workbook_id: str, spec: dict) -> dict:
-        return self.request("PATCH", f"/v2/workbooks/{workbook_id}/spec", {"spec": spec})
+        # PUT, not PATCH — the spec is replaced wholesale. PATCH on this path
+        # returns 404.
+        return self.request("PUT", f"/v2/workbooks/{workbook_id}/spec", dict(spec))
 
     def find_workbook_by_name(self, name: str) -> dict | None:
         """Look up a workbook by exact name so deploys are idempotent."""
