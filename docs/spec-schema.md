@@ -36,8 +36,58 @@ The response wraps the writable document in read-only metadata:
 Everything that defines the workbook lives under `document`. `name` and
 `description` sit *outside* it, alongside the other server-assigned metadata.
 
-`documentVersion` is presumably how PATCH detects a concurrent edit. **Not
-verified** — nothing has been written through the API yet.
+`documentVersion` is server-assigned and increments on each write. Do **not**
+send it; the write calls below ignore it.
+
+## Writing: verified against the live API
+
+Confirmed on 3 Sep 2026 by creating a throwaway workbook (`ZZ Delete Me - spec
+probe`, in My Documents) and updating it twice.
+
+### Create
+
+```
+POST /v2/workbooks/spec
+{ "name": "…", "folderId": "<uuid>", "document": { … } }
+```
+
+- **No `{"spec": …}` wrapper.** Sending one draws `Expecting string at 0.name`
+  plus a full type dump — the wrapper hides every field from the validator.
+- **`folderId` is required** and must be a UUID. There is no `workspaceId` on
+  this endpoint. Get one from `GET /v2/files?typeFilters=folder` (paginate with
+  the `nextPage` value from the response, not a `page` counter), or read
+  `folderId` off an existing workbook's spec.
+- The response is only `{"workbookId": "…"}`. `name`, `url`, `folderId` and
+  `documentVersion` all come back `null` — re-fetch the workbook if you need
+  them.
+
+### Update
+
+```
+PUT /v2/workbooks/{workbookId}/spec
+{ "document": { … } }
+```
+
+- **`PATCH` on this path answers 404.** The original client used PATCH, which
+  is why the "update if it already exists" path could never have worked.
+- The document is replaced wholesale, so read, modify, write back.
+- Response: `{"success": true, "workbookId": "…"}`.
+
+### The validator is the best documentation available
+
+Rejections name the offending field precisely, and a deliberately empty body
+(`{"spec": {}}`) returns ~61 KB describing every expected type — pages,
+elements, visibility, background images, the lot. When in doubt about a field,
+send something wrong on purpose and read the reply.
+
+Two content rules found this way:
+
+- A `text` element's `body` is markdown-flavoured. A bare `<p>` is rejected:
+  `<p> carries no non-default block style or alignment; use a plain paragraph or
+  # heading`. Pass plain text, `# heading`, or a `<p>` that actually carries a
+  style — as the reference workbook does with `<p class="p-large">`.
+- Column `formula` accepts Sigma functions, not just column references:
+  `Upper([TB_SIGMA_KPI_DICTIONARY/METRIC])` round-tripped intact.
 
 ## `document.elements[]` — a flat list, not nested in pages
 
@@ -172,13 +222,13 @@ So `build_spec.py` needs rewriting rather than correcting. The earlier note in
 the README that "corrections are a single edit rather than a rewrite" was
 optimistic and is no longer accurate.
 
-### Also: the connection id looks wrong
+### Also: the connection id is wrong
 
-`build_spec.py` emits `0a226657-a09f-4684-9465-820374fb6c30`, which is the
-`CENTRIC_SNOWPATH_PRD` connection. The reference workbook reads the same
-`SANDBOX.SBX_RRAJASEKAR.TB_SIGMA_*` tables that our SQL reads, and it uses
-`82dc9446-e21c-4484-987d-79b52a490e2a`. Whichever is correct, the two disagree
-and one of them will not resolve those tables.
+`build_spec.py` emits `0a226657-a09f-4684-9465-820374fb6c30`, the
+`CENTRIC_SNOWPATH_PRD` connection. The right one for
+`SANDBOX.SBX_RRAJASEKAR.*` is `82dc9446-e21c-4484-987d-79b52a490e2a` — verified
+by creating a table element against `TB_SIGMA_KPI_DICTIONARY` with that
+connection id and having it accepted and stored.
 
 ## What this means for `sql/`
 
@@ -194,10 +244,16 @@ as SQL instead. Two ways to reconcile that:
    it reimplements logic that is already correct and tested, in a language with
    no local test path.
 
-Option 1 preserves the work in `sql/` and follows the house pattern. It is also
-the reason several of our queries already read `TB_SIGMA_*` tables — that layer
-exists.
+**Decision: option 2, column formulas.** Column `formula` does accept Sigma
+functions and not just plain column references, which is what makes it viable
+at all.
 
-Before committing to either, it is worth asking Sigma whether a spec can declare
-a SQL-backed source, since that would make option 1 unnecessary. The private
-beta's schema is not published and this workbook does not settle the question.
+The risk to walk into knowingly: a column formula is evaluated *within one table
+element*, and our queries are not single-table. They use CTEs, joins across
+several `TB_SIGMA_*` tables, and window functions. Sigma expresses that with
+joined or child elements and `Lookup()` across elements, not with a formula per
+column. Expect the simple queries to port cleanly and the assembled ones —
+the Demand Plan row, the promo-discount join through the in-scope order list —
+to need restructuring into several elements rather than translating
+line-for-line. Some may not be expressible at all, in which case a view for
+those specific queries is the fallback, keeping formulas everywhere else.

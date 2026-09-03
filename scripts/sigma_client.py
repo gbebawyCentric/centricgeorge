@@ -154,14 +154,30 @@ class SigmaClient:
         """Code representation of an existing workbook."""
         return self.request("GET", f"/v2/workbooks/{workbook_id}/spec")
 
-    def create_workbook_from_spec(self, spec: dict, workspace_id: str | None = None) -> dict:
-        body: dict = {"spec": spec}
-        if workspace_id:
-            body["workspaceId"] = workspace_id
-        return self.request("POST", "/v2/workbooks/spec", body)
+    # Both calls below were verified against the live API on 3 Sep 2026 by
+    # creating and then updating a throwaway workbook. The request shapes are
+    # not what this file previously guessed:
+    #
+    #   - the body is {name, folderId, document}, not a {"spec": …} wrapper
+    #   - folderId is required, and there is no workspaceId on this endpoint
+    #   - updates are PUT; PATCH on the same path answers 404
+    #   - documentVersion is server-assigned and must not be sent
+    #
+    # docs/spec-schema.md carries the document schema and the evidence.
 
-    def update_workbook_from_spec(self, workbook_id: str, spec: dict) -> dict:
-        return self.request("PATCH", f"/v2/workbooks/{workbook_id}/spec", {"spec": spec})
+    def create_workbook_from_spec(self, name: str, document: dict, folder_id: str) -> dict:
+        """Create a workbook. Returns {"workbookId": …}; other fields come back null."""
+        return self.request(
+            "POST",
+            "/v2/workbooks/spec",
+            {"name": name, "folderId": folder_id, "document": document},
+        )
+
+    def update_workbook_from_spec(self, workbook_id: str, document: dict) -> dict:
+        """Replace a workbook's document. Returns {"success": true, "workbookId": …}."""
+        return self.request(
+            "PUT", f"/v2/workbooks/{workbook_id}/spec", {"document": document}
+        )
 
     def find_workbook_by_name(self, name: str) -> dict | None:
         """Look up a workbook by exact name so deploys are idempotent."""

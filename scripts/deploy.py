@@ -34,16 +34,31 @@ def main() -> None:
         help="update this workbook id directly instead of looking it up by name",
     )
     parser.add_argument(
-        "--workspace-id",
-        default=os.environ.get("SIGMA_WORKSPACE_ID"),
-        help="workspace to create the workbook in (defaults to $SIGMA_WORKSPACE_ID)",
+        "--folder-id",
+        default=os.environ.get("SIGMA_FOLDER_ID"),
+        help=(
+            "folder to create the workbook in (defaults to $SIGMA_FOLDER_ID). "
+            "Required on create — the API rejects a spec without one. Find one "
+            "with GET /v2/files?typeFilters=folder, or read folderId off an "
+            "existing workbook's spec."
+        ),
     )
     args = parser.parse_args()
 
     spec = build_spec()
-    element_count = sum(len(page["elements"]) for page in spec["pages"])
+
+    # build_spec.py was written to a guessed schema and has not been ported yet.
+    # Fail here with a pointer rather than sending a body the API will reject.
+    if "document" not in spec:
+        fail(
+            "build_spec() still emits the old guessed shape (name / dataSources / "
+            "pages / elements). The API wants {name, folderId, document}. See "
+            "docs/spec-schema.md for the real schema and the remaining gaps."
+        )
+
+    document = spec["document"]
     print(f'built spec for "{spec["name"]}"')
-    print(f"  {len(spec['dataSources'])} data sources, {element_count} elements")
+    print(f"  {len(document['pages'])} page(s), {len(document['elements'])} elements")
 
     if args.dry_run:
         print("\ndry run — nothing sent to Sigma.")
@@ -59,10 +74,17 @@ def main() -> None:
 
         if workbook_id:
             print(f"\nupdating existing workbook {workbook_id} ...")
-            result = client.update_workbook_from_spec(workbook_id, spec)
+            result = client.update_workbook_from_spec(workbook_id, spec["document"])
         else:
+            if not args.folder_id:
+                fail(
+                    "a folder is required to create a workbook. Pass --folder-id "
+                    "or set SIGMA_FOLDER_ID."
+                )
             print("\ncreating new workbook ...")
-            result = client.create_workbook_from_spec(spec, args.workspace_id)
+            result = client.create_workbook_from_spec(
+                spec["name"], spec["document"], args.folder_id
+            )
             workbook_id = result.get("workbookId", "?")
 
         print(f"done. workbook id: {workbook_id}")
