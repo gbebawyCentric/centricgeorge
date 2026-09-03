@@ -14,12 +14,26 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-# Sigma's API host depends on which cloud the org is on. Check the URL you use
-# to reach Sigma and set SIGMA_API_BASE_URL to match:
-#   AWS US (default)  https://aws-api.sigmacomputing.com
-#   AWS EU            https://api.eu-a.aws.sigmacomputing.com
-#   Azure US          https://api.us-a.azure.sigmacomputing.com
-#   GCP               https://api.sigmacomputing.com
+# Sigma's API host depends on which cloud and region the org is on, and the
+# host cannot be inferred from the app URL — find the org's cloud in Sigma
+# under Administration → Account, then set SIGMA_API_BASE_URL to match.
+# Authenticating against the wrong cloud does not say so: the token endpoint
+# rejects credentials it has never heard of with the same HTTP 400
+# "Invalid access/refresh token" it returns for a garbage client id.
+#
+# Per https://help.sigmacomputing.com/reference/get-started-sigma-api:
+#   AWS-US West (default)  https://aws-api.sigmacomputing.com
+#   AWS-US East            https://api.us-a.aws.sigmacomputing.com
+#   AWS-CA                 https://api.ca.aws.sigmacomputing.com
+#   AWS-EU                 https://api.eu.aws.sigmacomputing.com
+#   AWS-UK                 https://api.uk.aws.sigmacomputing.com
+#   AWS-AU                 https://api.au.aws.sigmacomputing.com
+#   Azure-US               https://api.us.azure.sigmacomputing.com
+#   Azure-EU               https://api.eu.azure.sigmacomputing.com
+#   Azure-CA               https://api.ca.azure.sigmacomputing.com
+#   Azure-UK               https://api.uk.azure.sigmacomputing.com
+#   Azure-AU               https://api.au.azure.sigmacomputing.com
+#   GCP                    https://api.sigmacomputing.com
 DEFAULT_BASE_URL = "https://aws-api.sigmacomputing.com"
 
 

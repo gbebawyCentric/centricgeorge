@@ -18,8 +18,12 @@ inside the session.
 
 | Host | Needed for |
 |---|---|
-| `aws-api.sigmacomputing.com` | The API itself. **Swap for your cloud's host** if not AWS US — it must match `SIGMA_API_BASE_URL`. |
+| `aws-api.sigmacomputing.com` | The API itself. **Swap for your cloud's host** if not AWS-US West — it must match `SIGMA_API_BASE_URL`. The full list of hosts per cloud and region is in `.env.example`; the org's cloud is under Administration → Account in Sigma, and is *not* inferable from the app URL. |
 | `help.sigmacomputing.com` | Sigma docs, including the workbooks-as-code spec reference |
+
+Allowlist only the one host that matches `SIGMA_API_BASE_URL`. The other Sigma
+API hosts stay policy-denied, which is a useful guard: a session cannot silently
+authenticate against the wrong cloud, it fails at the gateway instead.
 
 To confirm it worked, from a new session:
 
