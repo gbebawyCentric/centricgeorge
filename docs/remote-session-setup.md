@@ -18,17 +18,23 @@ inside the session.
 
 | Host | Needed for |
 |---|---|
-| `aws-api.sigmacomputing.com` | The API itself. **Swap for your cloud's host** if not AWS-US West — it must match `SIGMA_API_BASE_URL`. The full list of hosts per cloud and region is in `.env.example`; the org's cloud is under Administration → Account in Sigma, and is *not* inferable from the app URL. |
+| `api.us.azure.sigmacomputing.com` | The API itself. This is the Azure-US host, which is the cloud Centric Brands is on (Azure East US 2, Virginia). It must match `SIGMA_API_BASE_URL`. |
 | `help.sigmacomputing.com` | Sigma docs, including the workbooks-as-code spec reference |
 
 Allowlist only the one host that matches `SIGMA_API_BASE_URL`. The other Sigma
 API hosts stay policy-denied, which is a useful guard: a session cannot silently
 authenticate against the wrong cloud, it fails at the gateway instead.
 
+An earlier version of this file allowlisted `aws-api.sigmacomputing.com`, which
+is the AWS-US West host and belongs to no Sigma org of ours. Deploys failed
+against it with `HTTP 400 Invalid access/refresh token` — the credential was
+fine, the cloud was wrong, and the error does not distinguish the two. If the
+allowlist and `SIGMA_API_BASE_URL` ever disagree, that is the symptom.
+
 To confirm it worked, from a new session:
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' https://aws-api.sigmacomputing.com/v2/auth/token
+curl -sS -o /dev/null -w '%{http_code}\n' https://api.us.azure.sigmacomputing.com/v2/auth/token
 ```
 
 Anything other than `000` means the tunnel is open. A `403` recorded against

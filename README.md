@@ -18,10 +18,17 @@ $EDITOR .env                    # paste SIGMA_CLIENT_ID and SIGMA_CLIENT_SECRET
 set -a && . ./.env && set +a    # load into the shell
 ```
 
-`.env` is gitignored. Create the credential in Sigma under
-**Administration → APIs & Embed Secrets → Create New**; the secret is shown
-once at creation and cannot be retrieved afterwards. Also check
-`SIGMA_API_BASE_URL` matches your Sigma cloud — the default is AWS US.
+`.env` is gitignored — put real credentials there, never in `.env.example`,
+which is checked in. Create the credential in Sigma under
+**Administration → APIs & Embed Secrets → Create New**, and make sure it is an
+API client credential rather than an embed secret; the secret is shown once at
+creation and cannot be retrieved afterwards.
+
+`SIGMA_API_BASE_URL` is already set to `https://api.us.azure.sigmacomputing.com`,
+the Azure-US host — Centric Brands is on Azure East US 2 (Virginia). Leave it
+alone unless the org moves. Pointing it at another cloud fails with
+`HTTP 400 Invalid access/refresh token`, which looks like a rejected secret but
+is not.
 
 To deploy from inside a Claude Code session instead of a laptop, the same
 variables are set on the environment rather than in a file, and the Sigma API
