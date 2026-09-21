@@ -103,3 +103,12 @@ the known data gaps.
   brands; the emails are themed per brand.
 
 Both are covered in `docs/data-mapping.md`.
+
+## Also here: the Merchandising L4W fix
+
+Unrelated to the email, but it reuses `scripts/sigma_client.py`. The L4W
+measures in the **Merchandising** workbook are ANDed with the user's own date
+selection, so any range shorter than four weeks makes L4W identical to LW.
+`docs/merchandising-l4w.md` has the diagnosis and the warehouse numbers,
+`sql/verify_merchandising_l4w.sql` reproduces it, and
+`scripts/fix_merchandising_l4w.py` applies the correction (dry run by default).
