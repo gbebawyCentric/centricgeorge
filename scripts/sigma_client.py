@@ -144,19 +144,41 @@ class SigmaClient:
     def update_workbook_from_spec(self, workbook_id: str, spec: dict) -> dict:
         return self.request("PATCH", f"/v2/workbooks/{workbook_id}/spec", {"spec": spec})
 
-    def update_workbook_document(self, workbook_id: str, document: dict) -> dict:
-        """Replace a workbook's document.
+    def get_workbook_contents(self, workbook_id: str) -> dict:
+        """Code representation of a workbook, per the current docs.
 
-        The write verb is PUT, not PATCH — PATCH on the same path 404s — and the
-        body is the `document` object from a GET, not the whole GET response
-        wrapped in `spec`. Established by probing the live API; the endpoint is
-        in private beta and undocumented. `update_workbook_from_spec` above is
-        the shape the beta docs describe and does not work against this org.
+        help.sigmacomputing.com/docs/get-the-code-representation-of-a-workbook.
+        Returns the whole workbook object; `contents` holds the representation
+        and `documentVersion` is what the update endpoint locks against.
 
-        Note this replaces the document wholesale: anything a GET does not
-        round-trip is lost. Diff the spec afterwards.
+        This returns byte-identical content to `get_workbook_spec` above —
+        `/spec` and `?includeContents=true` are two names for the same thing.
         """
-        return self.request("PUT", f"/v2/workbooks/{workbook_id}/spec", {"document": document})
+        return self.request("GET", f"/v2/workbooks/{workbook_id}?includeContents=true")
+
+    def update_workbook_contents(
+        self, workbook_id: str, contents: dict, document_version: int | None = None
+    ) -> dict:
+        """Replace a workbook's code representation.
+
+        PUT, not PATCH. Sigma documents this two ways and both are live against
+        our org, hitting the same validator:
+
+            PUT /v2/workbooks/{id}/contents  {"contents": ...}   (docs pages)
+            PUT /v2/workbooks/{id}/spec      {"document": ...}   (API reference)
+
+        `document_version` is optimistic locking: the update is refused with
+        `stale_document_settings` if the workbook moved since it was read.
+        Omitting it is last-write-wins, so always pass it.
+
+        There are no partial updates — this replaces the representation
+        wholesale — and Sigma silently drops unsupported features on read, so
+        read back and diff after writing.
+        """
+        body: dict = {"contents": contents}
+        if document_version is not None:
+            body["documentVersion"] = document_version
+        return self.request("PUT", f"/v2/workbooks/{workbook_id}/contents", body)
 
     def find_workbook_by_name(self, name: str) -> dict | None:
         """Look up a workbook by exact name so deploys are idempotent."""

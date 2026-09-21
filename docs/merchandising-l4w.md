@@ -94,13 +94,31 @@ python3 scripts/fix_merchandising_l4w.py            # print the diff, send nothi
 python3 scripts/fix_merchandising_l4w.py --apply    # currently rejected, see below
 ```
 
-The write verb is `PUT /v2/workbooks/{id}/spec` with the body `{"document": …}`
-— **not** the `PATCH` with `{"spec": …}` that the beta documentation describes,
-which 404s. That much is now in `sigma_client.update_workbook_document`.
+The write verb is `PUT`, not the `PATCH` this repo had. Sigma documents it two
+ways and both are live against our org, hitting the same validator:
 
-The blocker is that **the workbook's own spec does not survive a round-trip**: a
-`GET` of it, PUT back unmodified, is rejected. Three defects found so far, each
-surfacing only after the previous one was cleared:
+```
+PUT /v2/workbooks/{id}/contents   {"contents": …, "documentVersion": …}   docs pages
+PUT /v2/workbooks/{id}/spec       {"document": …}                         API reference
+```
+
+Reads are the same story: `GET /v2/workbooks/{id}?includeContents=true` returns
+`contents` byte-identical to `/spec`'s `document`. `documentVersion` on the
+update is optimistic locking — omit it and it is last-write-wins. All of this is
+now in `scripts/sigma_client.py`.
+
+The blocker is that **the workbook's own representation does not survive a
+round-trip**: read it, write it back unmodified, and it is rejected — on both
+endpoint spellings, with the same error
+(`0a8a3ef6-8e39-400c-87f7-7113d3e61201`, `74d0c998-a4cc-490b-998d-52c8be0c1ae1`).
+That directly contradicts the update docs, which state:
+
+> Workbook metadata sent alongside `document` — including `name`, `folderId`,
+> and `description` — is ignored, so you can submit a response from the GET
+> spec endpoint unchanged.
+
+Three defects found so far, each surfacing only after the previous was cleared
+(the validator reports one per request):
 
 1. Four hidden pivot-tables (`crRPeoTB5L`, `ulq_u8DDfZ`, `VfmuFDDmzt`,
    `U0svjkP5Iu`) carry an `axisTotals` entry for an axis that is not a dimension
@@ -117,11 +135,25 @@ surfacing only after the previous one was cleared:
    see what is left without submitting again.
 
 (2) is the reason to stop rather than keep patching. `GET` **drops** data the
-workbook depends on. A `PUT` replaces the document wholesale, so anything else
-`GET` dropped — in a category the validator happens not to check — would be
-silently written away across all 112 elements. That is not a trade worth making
-against four edits that take two minutes in the UI, on a workbook the
-merchandising team reads weekly.
+workbook depends on. A `PUT` replaces the document wholesale — the docs are
+explicit that there are no partial updates — so anything else `GET` dropped, in
+a category the validator happens not to check, would be silently written away
+across all 112 elements. Sigma says as much themselves:
+
+> The workbook code representation does not support all workbook features.
+> Unsupported features are silently dropped when you make a request to the Get
+> a workbook endpoint.
+
+Documented losses include tagged versions, comments and sharing — this workbook
+carries a `QA` version tag. Those are workbook metadata rather than document
+content, so they are probably not at risk from a document write, but "probably"
+is doing real work in that sentence and there is no way to enumerate what else
+went missing. Not a trade worth making against four edits that take two minutes
+in the UI, on a workbook the merchandising team reads weekly.
+
+No dry-run is available to de-risk it: the overview doc mentions a `warnings`
+array from "dry-run validation", but `?dryRun=true` and a `dryRun` body field
+are both ignored on either endpoint.
 
 The pre-change spec is saved at
 `sigma/merchandising_spec_v71_20260921T175506Z.json` either way. Nothing was

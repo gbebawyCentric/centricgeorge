@@ -115,7 +115,9 @@ four edits to make, and `sql/verify_merchandising_l4w.sql` reproduces it.
 The fix has to be applied in the Sigma UI. `scripts/fix_merchandising_l4w.py`
 prints the exact change and can write it back, but the Merchandising spec does
 not survive a `GET` → `PUT` round-trip, so `--apply` is rejected — see the doc
-for what breaks and why forcing it is a bad idea. That investigation did turn up
-the real write endpoint (`PUT /v2/workbooks/{id}/spec` with `{"document": …}`,
-not the documented `PATCH` with `{"spec": …}`), which is now in
-`scripts/sigma_client.py` and is worth knowing before the first deploy above.
+for what breaks and why forcing it is a bad idea. That investigation did pin
+down the real endpoints — `PUT /v2/workbooks/{id}/contents` with
+`{"contents": …, "documentVersion": …}`, and `GET …?includeContents=true` to
+read — which are now in `scripts/sigma_client.py`. The `PATCH` with
+`{"spec": …}` this repo shipped was never a real endpoint; **read that before
+the first deploy above**, since `deploy.py` still calls it.
