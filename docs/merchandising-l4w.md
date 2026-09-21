@@ -65,14 +65,71 @@ no edit, and the ten or so downstream copies (`MERCHANDISING_BASE (Summary and
 Detail)`, `(Size and Best Sellers)`, the hidden pivots) only `Sum()` these, so
 they inherit the fix.
 
-`scripts/fix_merchandising_l4w.py` applies it. It refuses to run unless each
-formula reads exactly as recorded above, and backs the spec up before PATCHing:
+### Apply it in the Sigma UI
+
+Four edits, on the `SALES_TRANSACTIONS` element: open each column's formula and
+replace `and [INSIDE DATE RANGE]` with `and [Reporting Date] <= [DATE RANGE END]`.
+
+| Column | Column id |
+|---|---|
+| L4W SALES QTY | `9peS6Tq_yI` |
+| L4W SALES RETAIL | `3Y9lcWbZ3h` |
+| L4W SALES DISCOUNT | `zGK2nUFdjf` |
+| L4W COGS | `sFNu4tPbfQ` |
+
+`L4W NET SALES` is derived from two of these and needs no edit. Neither do the
+downstream copies — `MERCHANDISING_BASE (Summary and Detail)`, `(Size and Best
+Sellers)` and the hidden pivots only `Sum()` these columns, so they inherit it.
+
+### Why not through the API
+
+`scripts/fix_merchandising_l4w.py` makes exactly these edits to the spec and can
+PUT them back. **It does not currently work against this workbook, and it should
+not be forced through.** It is kept because the diff it prints is the change to
+make by hand, and because the endpoint notes below are worth having.
 
 ```bash
 set -a && . ./.env && set +a
 python3 scripts/fix_merchandising_l4w.py            # print the diff, send nothing
-python3 scripts/fix_merchandising_l4w.py --apply    # write it
+python3 scripts/fix_merchandising_l4w.py --apply    # currently rejected, see below
 ```
+
+The write verb is `PUT /v2/workbooks/{id}/spec` with the body `{"document": …}`
+— **not** the `PATCH` with `{"spec": …}` that the beta documentation describes,
+which 404s. That much is now in `sigma_client.update_workbook_document`.
+
+The blocker is that **the workbook's own spec does not survive a round-trip**: a
+`GET` of it, PUT back unmodified, is rejected. Three defects found so far, each
+surfacing only after the previous one was cleared:
+
+1. Four hidden pivot-tables (`crRPeoTB5L`, `ulq_u8DDfZ`, `VfmuFDDmzt`,
+   `U0svjkP5Iu`) carry an `axisTotals` entry for an axis that is not a dimension
+   on them. `GET` emits it, `PUT` rejects it. Inert, and the script drops it.
+   Note the same id *is* a live dimension on `emvJPA8iri` and `ThA5-G3idu`,
+   where the subtotal renders — so this has to be decided per element, not by
+   matching the id.
+2. `elements[4]`, a text element, references `[SALES_TRANSACTIONS/Last Refresh
+   Dts]` by name. The column exists
+   (`inode-6NzVzQg0OzAWuKeo736zVd/LAST_REFRESH_DTS`) but `GET` emits it with no
+   `name`, so the validator cannot resolve the reference — it is stricter than
+   the runtime, which resolves it fine.
+3. Unknown. The validator reports one error per request, so there is no way to
+   see what is left without submitting again.
+
+(2) is the reason to stop rather than keep patching. `GET` **drops** data the
+workbook depends on. A `PUT` replaces the document wholesale, so anything else
+`GET` dropped — in a category the validator happens not to check — would be
+silently written away across all 112 elements. That is not a trade worth making
+against four edits that take two minutes in the UI, on a workbook the
+merchandising team reads weekly.
+
+The pre-change spec is saved at
+`sigma/merchandising_spec_v71_20260921T175506Z.json` either way. Nothing was
+written: the workbook is still at document version 71, `updatedAt`
+2026-09-15T19:41:56Z. Every attempt was rejected before it landed.
+
+Worth raising with Sigma support — a spec that cannot be read and written back
+unchanged makes the whole workbooks-as-code path unusable for this workbook.
 
 ## Verified against the warehouse
 

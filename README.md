@@ -109,6 +109,13 @@ Both are covered in `docs/data-mapping.md`.
 Unrelated to the email, but it reuses `scripts/sigma_client.py`. The L4W
 measures in the **Merchandising** workbook are ANDed with the user's own date
 selection, so any range shorter than four weeks makes L4W identical to LW.
-`docs/merchandising-l4w.md` has the diagnosis and the warehouse numbers,
-`sql/verify_merchandising_l4w.sql` reproduces it, and
-`scripts/fix_merchandising_l4w.py` applies the correction (dry run by default).
+`docs/merchandising-l4w.md` has the diagnosis, the warehouse numbers and the
+four edits to make, and `sql/verify_merchandising_l4w.sql` reproduces it.
+
+The fix has to be applied in the Sigma UI. `scripts/fix_merchandising_l4w.py`
+prints the exact change and can write it back, but the Merchandising spec does
+not survive a `GET` → `PUT` round-trip, so `--apply` is rejected — see the doc
+for what breaks and why forcing it is a bad idea. That investigation did turn up
+the real write endpoint (`PUT /v2/workbooks/{id}/spec` with `{"document": …}`,
+not the documented `PATCH` with `{"spec": …}`), which is now in
+`scripts/sigma_client.py` and is worth knowing before the first deploy above.

@@ -11,11 +11,19 @@ already do.
 
     set -a && . ./.env && set +a
     python3 scripts/fix_merchandising_l4w.py              # show the diff, send nothing
-    python3 scripts/fix_merchandising_l4w.py --apply      # PATCH the workbook
+    python3 scripts/fix_merchandising_l4w.py --apply      # write it back
+
+--apply DOES NOT CURRENTLY WORK against this workbook, and should not be forced
+through. Its spec does not survive a round-trip: a GET of it, PUT back
+unmodified, is rejected, and at least one of the reasons is that GET drops a
+column name the workbook depends on. Since PUT replaces the document wholesale,
+anything else GET drops would be silently written away across all 112 elements.
+Make the four edits in the Sigma UI instead — docs/merchandising-l4w.md lists
+them, and the diff this prints is exactly that change.
 
 This edits a live production workbook, so it refuses to apply unless every
-formula it expects to rewrite is found exactly as recorded below, and it writes
-the pre-change spec to a backup file first.
+formula it expects to rewrite is found exactly as recorded below, it writes the
+pre-change spec to a backup file first, and it diffs the spec on read-back.
 """
 
 from __future__ import annotations
@@ -54,6 +62,17 @@ CLAMPED_COLUMNS = {
 WINDOW_COLUMN_ID = "gC1UthO2Rw"  # "4 WEEKS AGO"
 WINDOW_BEFORE = 'DateAdd("week", -4, [DATE RANGE END])'
 WINDOW_AFTER = 'DateAdd("day", 1, DateAdd("week", -4, [DATE RANGE END]))'
+
+# Some pivot-tables carry axisTotals entries pointing at ids that are not a
+# dimension on that element — the elements look to have been copied from the
+# size pivots without the column coming along. GET emits them, PUT rejects them
+# ("is not a declared row or column dimension"), so the workbook's own spec does
+# not round-trip and they have to come out before anything can be written back.
+# They are inert: a total on an axis that does not exist.
+#
+# The same id IS a live dimension on other elements, where the total renders, so
+# this is decided per element rather than by matching the id.
+GRAND_TOTAL_AXES = {"grand-row-total", "grand-column-total", "grand-total"}
 
 
 def find_element(spec: dict) -> dict:
@@ -104,6 +123,34 @@ def patch(spec: dict, fix_window_length: bool) -> list[tuple[str, str, str]]:
     return changes
 
 
+def declared_axes(element: dict) -> set[str]:
+    """Ids PUT will accept as an axisTotals target on this element."""
+    ids = {c["id"] for c in element.get("columns", []) or [] if "id" in c}
+    for key in ("rowsBy", "columnsBy", "rows", "values"):
+        for entry in element.get(key) or []:
+            if isinstance(entry, str):
+                ids.add(entry)
+            elif isinstance(entry, dict):
+                ids.add(entry.get("columnId") or entry.get("id"))
+    return ids - {None}
+
+
+def drop_dangling_axis_totals(spec: dict) -> list[tuple[str, list[str]]]:
+    """Strip axisTotals that name no dimension. Returns (element id, axis ids)."""
+    dropped = []
+    for element in spec["document"]["elements"]:
+        totals = element.get("axisTotals")
+        if not totals:
+            continue
+        declared = declared_axes(element) | GRAND_TOTAL_AXES
+        kept = [t for t in totals if t.get("axisId") in declared]
+        if len(kept) != len(totals):
+            gone = [t["axisId"] for t in totals if t.get("axisId") not in declared]
+            element["axisTotals"] = kept
+            dropped.append((element["id"], gone))
+    return dropped
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -149,6 +196,13 @@ def main() -> None:
         print(f"    - {before}")
         print(f"    + {after}")
 
+    dangling = drop_dangling_axis_totals(spec)
+    if dangling:
+        print(f"\n  dropping {sum(len(a) for _, a in dangling)} dangling axisTotals:")
+        for element_id, axes in dangling:
+            print(f"    {element_id}: {', '.join(axes)}")
+        print("    (PUT rejects these; they name no dimension on those elements)")
+
     if not args.apply:
         updated = json.dumps(spec, indent=2, ensure_ascii=False, sort_keys=True)
         diff = list(
@@ -166,11 +220,29 @@ def main() -> None:
     print(f"\nwrote pre-change spec to {backup}")
 
     try:
-        result = client.update_workbook_from_spec(args.workbook_id, spec)
+        client.update_workbook_document(args.workbook_id, spec["document"])
     except SigmaError as exc:
         fail(str(exc), exc.body)
 
-    print(f"applied. {result.get('url') or args.workbook_id}")
+    # The PUT replaces the document wholesale, so read it back and account for
+    # every difference. Anything here that is not one of the edits above is
+    # something the round-trip lost.
+    after_spec = client.get_workbook_spec(args.workbook_id)
+    print(f"applied. document version {version} -> {after_spec.get('documentVersion')}")
+
+    diff = list(
+        difflib.unified_diff(
+            original.splitlines(),
+            json.dumps(after_spec, indent=2, ensure_ascii=False, sort_keys=True).splitlines(),
+            "before",
+            "after",
+            n=0,
+        )
+    )
+    changed = [line for line in diff if line[:1] in "+-" and line[:3] not in ("---", "+++")]
+    print(f"{len(changed)} changed spec line(s) on read-back:")
+    for line in changed:
+        print(f"  {line[:200]}")
 
 
 if __name__ == "__main__":

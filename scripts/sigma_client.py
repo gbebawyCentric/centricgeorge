@@ -144,6 +144,20 @@ class SigmaClient:
     def update_workbook_from_spec(self, workbook_id: str, spec: dict) -> dict:
         return self.request("PATCH", f"/v2/workbooks/{workbook_id}/spec", {"spec": spec})
 
+    def update_workbook_document(self, workbook_id: str, document: dict) -> dict:
+        """Replace a workbook's document.
+
+        The write verb is PUT, not PATCH — PATCH on the same path 404s — and the
+        body is the `document` object from a GET, not the whole GET response
+        wrapped in `spec`. Established by probing the live API; the endpoint is
+        in private beta and undocumented. `update_workbook_from_spec` above is
+        the shape the beta docs describe and does not work against this org.
+
+        Note this replaces the document wholesale: anything a GET does not
+        round-trip is lost. Diff the spec afterwards.
+        """
+        return self.request("PUT", f"/v2/workbooks/{workbook_id}/spec", {"document": document})
+
     def find_workbook_by_name(self, name: str) -> dict | None:
         """Look up a workbook by exact name so deploys are idempotent."""
         page = self.request("GET", "/v2/workbooks?limit=500")
